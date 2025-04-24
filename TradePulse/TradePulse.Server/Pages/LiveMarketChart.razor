@@ -1,0 +1,66 @@
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
+@using Blazorise.Charts
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject ILogger<LiveMarketChart> Logger
+
+<h3>📈 Live Market Chart</h3>
+
+<LineChart @ref="lineChart" TItem="double" />
+
+@code {
+    private LineChart<double>? lineChart;
+    private LineChartDataset<double> dataset = new()
+    {
+        Label = "Price",
+        BackgroundColor = "rgba(75, 192, 192, 0.2)",
+        BorderColor = "rgba(75, 192, 192, 1)",
+        Data = new List<double>(),
+    };
+
+    private List<string> labels = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await ConnectToSignalR();
+    }
+
+    private async Task ConnectToSignalR()
+    {
+        var connection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/markethub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        connection.On<MarketEvent>("ReceiveMarketEvent", async marketEvent =>
+        {
+            try
+            {
+                // Safely handle nullable types
+                labels.Add(marketEvent.Timestamp?.ToShortTimeString() ?? "N/A");
+                dataset.Data.Add((double)(marketEvent.Price ?? 0));
+
+                if (lineChart != null)
+                {
+                    await lineChart.Clear();
+                    await lineChart.AddLabelsDatasetsAndUpdate(labels, dataset);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error updating chart");
+            }
+        });
+
+        await connection.StartAsync();
+    }
+
+    public class MarketEvent
+    {
+        public string? Symbol { get; set; }
+        public decimal? Price { get; set; }
+        public DateTime? Timestamp { get; set; }
+    }
+}
