@@ -16,7 +16,7 @@ TradePulse is a web-based application that displays live financial market update
 
 ## 📷 UI Preview
 
-> 💬 Add a screenshot here later (optional)
+
 
 ## 🧪 How to Test Live Updates
 
