@@ -44,6 +44,22 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Blazorise": {
+              "target": "Package",
+              "version": "[1.7.6, )"
+            },
+            "Blazorise.Bootstrap": {
+              "target": "Package",
+              "version": "[1.7.6, )"
+            },
+            "Blazorise.Charts": {
+              "target": "Package",
+              "version": "[1.7.6, )"
+            },
+            "Blazorise.Icons.FontAwesome": {
+              "target": "Package",
+              "version": "[1.7.6, )"
+            },
             "Microsoft.AspNetCore.Components": {
               "target": "Package",
               "version": "[9.0.4, )"
@@ -53,6 +69,10 @@
               "version": "[9.0.4, )"
             },
             "Microsoft.AspNetCore.Components.WebAssembly.Server": {
+              "target": "Package",
+              "version": "[9.0.4, )"
+            },
+            "Microsoft.AspNetCore.SignalR.Client": {
               "target": "Package",
               "version": "[9.0.4, )"
             }
