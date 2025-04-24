@@ -804,8 +804,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>qyz4ekmlkk</Fingerprint>
-      <Integrity>Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk=</Integrity>
+      <Fingerprint>x12n4ulu4c</Fingerprint>
+      <Integrity>2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\signalr-client.js'))</OriginalItemSpec>

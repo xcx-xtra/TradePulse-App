@@ -531,14 +531,14 @@
     <StaticWebAssetEndpoint Include="_content/TradePulse.Server/js/signalr-client.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\signalr-client.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
-      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"338"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk=\u0022"},{"Name":"Last-Modified","Value":"Wed, 23 Apr 2025 06:03:46 GMT"}]]]></ResponseHeaders>
+      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI="}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"633"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u00222wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI=\u0022"},{"Name":"Last-Modified","Value":"Thu, 24 Apr 2025 05:03:01 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
-    <StaticWebAssetEndpoint Include="_content/TradePulse.Server/js/signalr-client.qyz4ekmlkk.js">
+    <StaticWebAssetEndpoint Include="_content/TradePulse.Server/js/signalr-client.x12n4ulu4c.js">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\signalr-client.js'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
-      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"qyz4ekmlkk"},{"Name":"integrity","Value":"sha256-Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk="},{"Name":"label","Value":"_content/TradePulse.Server/js/signalr-client.js"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"338"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk=\u0022"},{"Name":"Last-Modified","Value":"Wed, 23 Apr 2025 06:03:46 GMT"}]]]></ResponseHeaders>
+      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"x12n4ulu4c"},{"Name":"integrity","Value":"sha256-2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI="},{"Name":"label","Value":"_content/TradePulse.Server/js/signalr-client.js"}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"633"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u00222wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI=\u0022"},{"Name":"Last-Modified","Value":"Thu, 24 Apr 2025 05:03:01 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
   </ItemGroup>
 </Project>

@@ -5,30 +5,77 @@
 <h3>📈 Live Market Ticker</h3>
 
 <ul>
-    @foreach (var e in Events)
+    @foreach (var item in Events)
     {
-        <li>@e.Symbol - $@e.Price (@e.Timestamp.ToShortTimeString())</li>
+        <li @key="item.Timestamp">
+            <strong>@item.Symbol</strong> - $@item.Price <br />
+            <small>@item.Timestamp.ToLocalTime()</small>
+        </li>
     }
 </ul>
 
 @code {
     private List<MarketEvent> Events = new();
     private bool _hasInitialized = false;
+    private DotNetObjectReference<Index>? _objRef;
+    private bool _disposed = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_hasInitialized)
         {
             _hasInitialized = true;
-            await JS.InvokeVoidAsync("startSignalR", DotNetObjectReference.Create(this));
+            _objRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("startSignalR", _objRef);
         }
     }
 
     [JSInvokable]
-    public async Task ReceiveMarketEvent(MarketEvent marketEvent)
+public async Task ReceiveMarketEvent(MarketEvent marketEvent)
+{
+    if (_disposed || Events == null) return;
+
+    try
     {
-        Events.Insert(0, marketEvent);
-        await InvokeAsync(StateHasChanged);
+        await InvokeAsync(() =>
+        {
+            Events.Insert(0, marketEvent);
+            StateHasChanged();
+        });
+    }
+    catch (ObjectDisposedException)
+    {
+        Console.WriteLine("Component was disposed before render.");
+    }
+    catch (InvalidOperationException ex)
+    {
+        Console.WriteLine($"Render failed: {ex.Message}");
+    }
+}
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+
+        if (_objRef != null)
+        {
+            _objRef.Dispose();
+        }
+
+        if (JS != null)
+        {
+            await JS.InvokeVoidAsync("stopSignalR");
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+
+        if (JS != null)
+        {
+            _ = JS.InvokeVoidAsync("stopSignalR");
+        }
     }
 
     public class MarketEvent

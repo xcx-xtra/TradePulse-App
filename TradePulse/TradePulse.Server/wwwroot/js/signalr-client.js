@@ -1,11 +1,26 @@
 let connection;
 
-window.startSignalR = (dotNetObj) => {
+window.startSignalR = async function (dotNetObj) {
   connection = new signalR.HubConnectionBuilder().withUrl("/markethub").build();
 
   connection.on("ReceiveMarketEvent", (data) => {
-    dotNetObj.invokeMethodAsync("ReceiveMarketEvent", data);
+    if (dotNetObj) {
+      dotNetObj
+        .invokeMethodAsync("ReceiveMarketEvent", data)
+        .catch((err) => console.error("JS -> .NET call failed", err));
+    }
   });
 
-  connection.start().catch((err) => console.error(err.toString()));
+  connection.onclose(() => {
+    console.warn("SignalR disconnected.");
+  });
+
+  await connection.start();
+};
+
+window.stopSignalR = async function () {
+  if (connection) {
+    await connection.stop();
+    connection = null;
+  }
 };

@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "XRML7OZ/W4dvVyXH+6aF9zFKgOWNSI4zHisLY4lFogM=",
+  "Hash": "7ABENFzbpOYPknpwAqnknYIml91+xqd7yRI1ld1kpz0=",
   "Source": "TradePulse.Server",
   "BasePath": "_content/TradePulse.Server",
   "Mode": "Default",
@@ -248,12 +248,12 @@
       "OriginalItemSpec": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\wwwroot\\css\\bootstrap-reboot.rtl.css"
     },
     {
-      "Identity": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\bnwzmyuahv-qyz4ekmlkk.gz",
+      "Identity": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\bnwzmyuahv-x12n4ulu4c.gz",
       "SourceId": "TradePulse.Server",
       "SourceType": "Discovered",
       "ContentRoot": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\",
       "BasePath": "_content/TradePulse.Server",
-      "RelativePath": "js/signalr-client#[.{fingerprint=qyz4ekmlkk}]?.js.gz",
+      "RelativePath": "js/signalr-client#[.{fingerprint=x12n4ulu4c}]?.js.gz",
       "AssetKind": "All",
       "AssetMode": "All",
       "AssetRole": "Alternative",
@@ -262,8 +262,8 @@
       "RelatedAsset": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\wwwroot\\js\\signalr-client.js",
       "AssetTraitName": "Content-Encoding",
       "AssetTraitValue": "gzip",
-      "Fingerprint": "dpum3vmblb",
-      "Integrity": "8SPQy6Ax3qp4pVsMNddk7q0wk2h/eohmH3YEipDeCQU=",
+      "Fingerprint": "xwuxi8e0ne",
+      "Integrity": "P5NjKHrdA3/isiktDmA2pXCBA+63e1rMbtwFpxknVfw=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\wwwroot\\js\\signalr-client.js"
@@ -1900,8 +1900,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "qyz4ekmlkk",
-      "Integrity": "Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk=",
+      "Fingerprint": "x12n4ulu4c",
+      "Integrity": "2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\signalr-client.js"
@@ -15022,12 +15022,12 @@
     },
     {
       "Route": "js/signalr-client.js",
-      "AssetFile": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\bnwzmyuahv-qyz4ekmlkk.gz",
+      "AssetFile": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\bnwzmyuahv-x12n4ulu4c.gz",
       "Selectors": [
         {
           "Name": "Content-Encoding",
           "Value": "gzip",
-          "Quality": "0.004385964912"
+          "Quality": "0.003115264798"
         }
       ],
       "ResponseHeaders": [
@@ -15037,15 +15037,15 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "227"
+          "Value": "320"
         },
         {
           "Name": "ETag",
-          "Value": "\"8SPQy6Ax3qp4pVsMNddk7q0wk2h/eohmH3YEipDeCQU=\""
+          "Value": "\"P5NjKHrdA3/isiktDmA2pXCBA+63e1rMbtwFpxknVfw=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Wed, 23 Apr 2025 06:03:46 GMT"
+          "Value": "Thu, 24 Apr 2025 05:03:01 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -15065,13 +15065,13 @@
         },
         {
           "Name": "ETag",
-          "Value": "W/\"Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk=\""
+          "Value": "W/\"2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI=\""
         }
       ],
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk="
+          "Value": "sha256-2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI="
         }
       ]
     },
@@ -15086,7 +15086,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "338"
+          "Value": "633"
         },
         {
           "Name": "Content-Type",
@@ -15094,11 +15094,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk=\""
+          "Value": "\"2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Wed, 23 Apr 2025 06:03:46 GMT"
+          "Value": "Thu, 24 Apr 2025 05:03:01 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -15108,13 +15108,13 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk="
+          "Value": "sha256-2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI="
         }
       ]
     },
     {
       "Route": "js/signalr-client.js.gz",
-      "AssetFile": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\bnwzmyuahv-qyz4ekmlkk.gz",
+      "AssetFile": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\bnwzmyuahv-x12n4ulu4c.gz",
       "Selectors": [],
       "ResponseHeaders": [
         {
@@ -15123,7 +15123,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "227"
+          "Value": "320"
         },
         {
           "Name": "Content-Type",
@@ -15131,11 +15131,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"8SPQy6Ax3qp4pVsMNddk7q0wk2h/eohmH3YEipDeCQU=\""
+          "Value": "\"P5NjKHrdA3/isiktDmA2pXCBA+63e1rMbtwFpxknVfw=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Wed, 23 Apr 2025 06:03:46 GMT"
+          "Value": "Thu, 24 Apr 2025 05:03:01 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -15153,18 +15153,18 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-8SPQy6Ax3qp4pVsMNddk7q0wk2h/eohmH3YEipDeCQU="
+          "Value": "sha256-P5NjKHrdA3/isiktDmA2pXCBA+63e1rMbtwFpxknVfw="
         }
       ]
     },
     {
-      "Route": "js/signalr-client.qyz4ekmlkk.js",
-      "AssetFile": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\bnwzmyuahv-qyz4ekmlkk.gz",
+      "Route": "js/signalr-client.x12n4ulu4c.js",
+      "AssetFile": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\bnwzmyuahv-x12n4ulu4c.gz",
       "Selectors": [
         {
           "Name": "Content-Encoding",
           "Value": "gzip",
-          "Quality": "0.004385964912"
+          "Quality": "0.003115264798"
         }
       ],
       "ResponseHeaders": [
@@ -15174,15 +15174,15 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "227"
+          "Value": "320"
         },
         {
           "Name": "ETag",
-          "Value": "\"8SPQy6Ax3qp4pVsMNddk7q0wk2h/eohmH3YEipDeCQU=\""
+          "Value": "\"P5NjKHrdA3/isiktDmA2pXCBA+63e1rMbtwFpxknVfw=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Wed, 23 Apr 2025 06:03:46 GMT"
+          "Value": "Thu, 24 Apr 2025 05:03:01 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -15202,13 +15202,13 @@
         },
         {
           "Name": "ETag",
-          "Value": "W/\"Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk=\""
+          "Value": "W/\"2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI=\""
         }
       ],
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "qyz4ekmlkk"
+          "Value": "x12n4ulu4c"
         },
         {
           "Name": "label",
@@ -15216,12 +15216,12 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk="
+          "Value": "sha256-2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI="
         }
       ]
     },
     {
-      "Route": "js/signalr-client.qyz4ekmlkk.js",
+      "Route": "js/signalr-client.x12n4ulu4c.js",
       "AssetFile": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\wwwroot\\js\\signalr-client.js",
       "Selectors": [],
       "ResponseHeaders": [
@@ -15231,7 +15231,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "338"
+          "Value": "633"
         },
         {
           "Name": "Content-Type",
@@ -15239,11 +15239,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk=\""
+          "Value": "\"2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Wed, 23 Apr 2025 06:03:46 GMT"
+          "Value": "Thu, 24 Apr 2025 05:03:01 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -15253,7 +15253,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "qyz4ekmlkk"
+          "Value": "x12n4ulu4c"
         },
         {
           "Name": "label",
@@ -15261,13 +15261,13 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-Es3ZmPyDkzgtw4IYH1EJI7qqwkcB/nw7rcJdH8W5tyk="
+          "Value": "sha256-2wkO725k7x3RQ1duRb4rnE3zNe/flJs4lWUjFp13oRI="
         }
       ]
     },
     {
-      "Route": "js/signalr-client.qyz4ekmlkk.js.gz",
-      "AssetFile": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\bnwzmyuahv-qyz4ekmlkk.gz",
+      "Route": "js/signalr-client.x12n4ulu4c.js.gz",
+      "AssetFile": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\Debug\\net9.0\\compressed\\bnwzmyuahv-x12n4ulu4c.gz",
       "Selectors": [],
       "ResponseHeaders": [
         {
@@ -15276,7 +15276,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "227"
+          "Value": "320"
         },
         {
           "Name": "Content-Type",
@@ -15284,11 +15284,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"8SPQy6Ax3qp4pVsMNddk7q0wk2h/eohmH3YEipDeCQU=\""
+          "Value": "\"P5NjKHrdA3/isiktDmA2pXCBA+63e1rMbtwFpxknVfw=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Wed, 23 Apr 2025 06:03:46 GMT"
+          "Value": "Thu, 24 Apr 2025 05:03:01 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -15306,7 +15306,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "qyz4ekmlkk"
+          "Value": "x12n4ulu4c"
         },
         {
           "Name": "label",
@@ -15314,7 +15314,7 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-8SPQy6Ax3qp4pVsMNddk7q0wk2h/eohmH3YEipDeCQU="
+          "Value": "sha256-P5NjKHrdA3/isiktDmA2pXCBA+63e1rMbtwFpxknVfw="
         }
       ]
     }

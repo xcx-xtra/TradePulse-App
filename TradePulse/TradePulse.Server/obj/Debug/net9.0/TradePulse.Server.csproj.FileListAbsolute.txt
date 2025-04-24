@@ -38,6 +38,7 @@ C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradeP
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\TradePulse.Server.MvcApplicationPartsAssemblyInfo.cache
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\TradePulse.Server.RazorAssemblyInfo.cache
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\TradePulse.Server.RazorAssemblyInfo.cs
+C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\TradePulse.Server.sourcelink.json
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\scopedcss\bundle\TradePulse.Server.styles.css
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\compressed\srvrvqyzgx-s2taj0jpt8.gz
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\compressed\zl7b5dv9mf-ylu1e6mjaa.gz
@@ -83,7 +84,6 @@ C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradeP
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\compressed\io79q0g40x-nd7yxyuic7.gz
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\compressed\otzo4rue6e-fw9op1z7az.gz
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\compressed\vye9x03zwh-bi4v2s709r.gz
-C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\compressed\bnwzmyuahv-qyz4ekmlkk.gz
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\staticwebassets.build.json
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\staticwebassets.development.json
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\staticwebassets.build.endpoints.json
@@ -99,3 +99,4 @@ C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradeP
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\TradePulse.Server.pdb
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\TradePulse.Server.genruntimeconfig.cache
 C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\ref\TradePulse.Server.dll
+C:\Users\Heatn\OneDrive\Desktop\ProJects Folder\TradePulse App\TradePulse\TradePulse.Server\obj\Debug\net9.0\compressed\bnwzmyuahv-x12n4ulu4c.gz
