@@ -1,0 +1,40 @@
+@page "/"
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<h3>📈 Live Market Ticker</h3>
+
+<ul>
+    @foreach (var e in Events)
+    {
+        <li>@e.Symbol - $@e.Price (@e.Timestamp.ToShortTimeString())</li>
+    }
+</ul>
+
+@code {
+    private List<MarketEvent> Events = new();
+    private bool _hasInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hasInitialized)
+        {
+            _hasInitialized = true;
+            await JS.InvokeVoidAsync("startSignalR", DotNetObjectReference.Create(this));
+        }
+    }
+
+    [JSInvokable]
+    public async Task ReceiveMarketEvent(MarketEvent marketEvent)
+    {
+        Events.Insert(0, marketEvent);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public class MarketEvent
+    {
+        public string? Symbol { get; set; }
+        public decimal? Price { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+}
