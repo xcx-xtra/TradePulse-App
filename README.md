@@ -43,6 +43,17 @@ MarketHub.cs: SignalR Hub
 
 wwwroot/js/signalr-client.js: Client-side connection to SignalR
 
+🐞 Known Issues
+Occasional Render Errors on SignalR Updates
+You may see console errors like:
+
+javascript
+Copy code
+Error: Cannot read properties of null (reading 'removeChild')
+This occurs when SignalR attempts to update the UI after the Blazor component has been disposed or unmounted. While this does not break core functionality, it can be noisy in development mode. This will be addressed in a future sprint by improving lifecycle and connection cleanup logic.
+
+
+
 💻 Tech Stack
 Blazor Server (.NET)
 
