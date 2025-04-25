@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
+
 [ApiController]
 [Route("api/[controller]")]
 public class MarketController : ControllerBase
@@ -22,7 +23,7 @@ public class MarketController : ControllerBase
 
 public class MarketEvent
 {
-    public string? Symbol { get; set; }
-    public decimal? Price { get; set; }
+    public required string Symbol { get; set; }
+    public decimal Price { get; set; }
     public DateTime? Timestamp { get; set; }
 }

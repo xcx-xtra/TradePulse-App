@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "HC3LJNJvkRA=",
+  "dgSpecHash": "M25xbJAVadg=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj",
+  "projectFilePath": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse-App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Heatn\\.nuget\\packages\\blazorise\\1.7.6\\blazorise.1.7.6.nupkg.sha512",
     "C:\\Users\\Heatn\\.nuget\\packages\\blazorise.bootstrap\\1.7.6\\blazorise.bootstrap.1.7.6.nupkg.sha512",

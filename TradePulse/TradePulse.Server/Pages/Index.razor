@@ -17,27 +17,20 @@
 
 <LineChart TItem="double" @ref="lineChart" />
 
-<LiveMarketChart />
-
 @code {
-    private List<MarketEvent> Events = new();
-    private bool _hasInitialized = false;
-    private DotNetObjectReference<Index>? _objRef;
-    private bool _disposed = false;
-
     private LineChart<double>? lineChart;
-    private List<double> prices = new();
-    private List<string> labels = new();
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private LineChartDataset<double> dataset = new()
     {
-        if (firstRender && !_hasInitialized)
-        {
-            _hasInitialized = true;
-            _objRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("startSignalR", _objRef);
-        }
-    }
+        Label = "Price",
+        BackgroundColor = "rgba(54, 162, 235, 0.5)",
+        BorderColor = "rgba(54, 162, 235, 1)",
+        Fill = true,
+        Data = new List<double>(),
+    };
+
+    private List<string> labels = new();
+    private List<MarketEvent> Events = new(); // Ensure Events is initialized
+    private bool _disposed; // Declare _disposed for cleanup
 
     [JSInvokable]
     public async Task ReceiveMarketEvent(MarketEvent marketEvent)
@@ -49,12 +42,15 @@
             await InvokeAsync(() =>
             {
                 Events.Insert(0, marketEvent);
-                prices.Add((double)(marketEvent.Price ?? 0));
-                labels.Add(marketEvent.Timestamp?.ToShortTimeString() ?? "N/A");
 
-                if (prices.Count > 10)
+                // Safe handling for nullable types
+                labels.Add(marketEvent.Timestamp?.ToString("HH:mm:ss") ?? "N/A");
+                dataset.Data.Add((double)marketEvent.Price);
+
+                // Keep only the last 10 data points
+                if (dataset.Data.Count > 10)
                 {
-                    prices.RemoveAt(0);
+                    dataset.Data.RemoveAt(0);
                     labels.RemoveAt(0);
                 }
 
@@ -82,36 +78,12 @@
         }
 
         await lineChart.Clear();
-
-        var chartDataset = new LineChartDataset<double>
-        {
-            Data = prices,
-            Label = "Price",
-            BackgroundColor = "rgba(75, 192, 192, 0.2)",
-            BorderColor = "rgba(75, 192, 192, 1)",
-            Fill = true
-        };
-
-        await lineChart.AddLabelsDatasetsAndUpdate(labels, chartDataset);
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        _disposed = true;
-        _objRef?.Dispose();
-        if (JS != null) await JS.InvokeVoidAsync("stopSignalR");
+        await lineChart.AddLabelsDatasetsAndUpdate(labels, dataset);
     }
 
     public void Dispose()
     {
-        _disposed = true;
-        _ = JS?.InvokeVoidAsync("stopSignalR");
-    }
-
-    public class MarketEvent
-    {
-        public string? Symbol { get; set; }
-        public decimal? Price { get; set; }
-        public DateTime? Timestamp { get; set; }
+        _disposed = true; // Mark the component as disposed
+        // Add any additional cleanup logic here
     }
 }
