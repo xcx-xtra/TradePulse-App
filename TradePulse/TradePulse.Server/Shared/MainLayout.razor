@@ -1,28 +1,283 @@
 @inherits LayoutComponentBase
-@using TradePulse.Server.Shared
 
-<div class="page">
-    <div class="sidebar">
-        <!-- Optional sidebar content -->
+<div class="page-wrapper" data-theme="dark">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <Header />
+    <div class="main-content">
+        <NavMenu />
+        <main id="main-content" class="content-pane" role="main" aria-label="Main content">
+            @Body
+        </main>
     </div>
-
-    <main>
-        @Body
-    </main>
+    <ToastNotifications />
 </div>
 
 <style>
-    .page {
+    .page-wrapper {
+        min-height: 100vh;
+        background: var(--color-background);
+        color: var(--color-text-primary);
+        font-family: var(--font-family-primary);
         display: flex;
+        flex-direction: column;
+        transition: all var(--transition-normal);
     }
 
-    .sidebar {
-        width: 200px;
-        background-color: #f5f5f5;
+    .main-header {
+        position: sticky;
+        top: 0;
+        z-index: var(--z-sticky);
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border-bottom: 1px solid var(--glass-border);
+        box-shadow: var(--shadow-glass);
     }
 
-    main {
+    .header-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--spacing-md) var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .brand-section {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+
+    .brand-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+        border-radius: var(--radius-lg);
+        color: white;
+        box-shadow: var(--shadow-md);
+    }
+
+    .brand-text {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .brand-title {
+        margin: 0;
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-primary);
+        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .brand-subtitle {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-lg);
+    }
+
+    .theme-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .theme-toggle:hover {
+        color: var(--color-primary);
+        border-color: var(--color-primary);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .main-content {
         flex: 1;
-        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .content-pane {
+        flex: 1;
+        width: 100%;
+        overflow-x: hidden; /* Prevent horizontal scroll */
+    }
+
+    /* Enhanced Responsive Design */
+    
+    /* Large screens */
+    @@media (min-width: 1200px) {
+        .header-container {
+            max-width: 1400px;
+            padding: var(--spacing-lg) var(--spacing-xl);
+        }
+        
+        .brand-title {
+            font-size: var(--font-size-2xl);
+        }
+        
+        .header-actions {
+            gap: var(--spacing-xl);
+        }
+    }
+
+    /* Medium screens - tablets */
+    @@media (max-width: 1199px) and (min-width: 769px) {
+        .header-container {
+            padding: var(--spacing-md) var(--spacing-lg);
+        }
+        
+        .brand-title {
+            font-size: var(--font-size-xl);
+        }
+        
+        .header-actions {
+            gap: var(--spacing-lg);
+        }
+    }
+
+    /* Mobile devices */
+    @@media (max-width: 768px) {
+        .page-wrapper {
+            overflow-x: hidden;
+        }
+        
+        .header-container {
+            padding: var(--spacing-sm) var(--spacing-md);
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+
+        .brand-section {
+            gap: var(--spacing-sm);
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .brand-title {
+            font-size: var(--font-size-lg);
+        }
+
+        .brand-subtitle {
+            display: none;
+        }
+        
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+        }
+
+        .header-actions {
+            gap: var(--spacing-sm);
+            flex-shrink: 0;
+        }
+        
+        .theme-toggle {
+            width: 44px; /* Touch-friendly */
+            height: 44px;
+        }
+    }
+
+    /* Small mobile devices */
+    @@media (max-width: 480px) {
+        .header-container {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            justify-content: space-between;
+        }
+        
+        .brand-section {
+            min-width: auto;
+        }
+        
+        .brand-title {
+            font-size: var(--font-size-base);
+        }
+        
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+        }
+
+        .header-actions {
+            gap: var(--spacing-xs);
+        }
+        
+        .theme-toggle {
+            width: 40px;
+            height: 40px;
+        }
+    }
+    
+    /* Landscape mobile optimization */
+    @@media (max-height: 500px) and (orientation: landscape) {
+        .header-container {
+            padding: var(--spacing-xs) var(--spacing-sm);
+        }
+        
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+        }
+        
+        .brand-title {
+            font-size: var(--font-size-sm);
+        }
     }
 </style>
+
+@code {
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    private string currentTheme = "dark";
+
+    private async Task ToggleTheme()
+    {
+        try
+        {
+            currentTheme = await JSRuntime.InvokeAsync<string>("toggleTheme");
+            StateHasChanged();
+        }
+        catch
+        {
+            // Fallback for when JS is not available
+            currentTheme = currentTheme == "dark" ? "light" : "dark";
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // Initialize theme on first render
+                await Task.Delay(100); // Give JS time to load
+                await JSRuntime.InvokeVoidAsync("themeManager.updateThemeToggleIcon");
+            }
+            catch
+            {
+                // JS not ready yet, ignore
+            }
+        }
+    }
+}

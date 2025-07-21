@@ -1,66 +1,452 @@
 @using Microsoft.AspNetCore.SignalR.Client
-@using Microsoft.JSInterop
 @using Blazorise.Charts
-@inject IJSRuntime JS
+@using TradePulse.Server.Models
 @inject NavigationManager Navigation
 @inject ILogger<LiveMarketChart> Logger
+@implements IAsyncDisposable
 
-<h3>📈 Live Market Chart</h3>
+<div class="chart-wrapper">
+    <div class="chart-header">
+        <h3 class="chart-title">📈 Live Market Chart</h3>
+        <div class="chart-info">
+            <span>@chartDataPoints.Count data points</span>
+        </div>
+    </div>
 
-<LineChart @ref="lineChart" TItem="double" />
+    <div class="chart-container modern-card" 
+         role="img" 
+         aria-label="Live market price chart showing recent price movements"
+         tabindex="0">
+        @if (isChartLoading)
+        {
+            <div role="status" aria-live="polite">
+                <SkeletonLoader Type="SkeletonLoader.SkeletonType.Chart" IsVisible="true" />
+                <span class="sr-only">Loading chart data...</span>
+            </div>
+        }
+        else if (!chartDataPoints.Any())
+        {
+            <div class="chart-empty" role="status">
+                <h4>No market data yet</h4>
+                <p>Chart will update when market events are received</p>
+                <small>Test with: <code>POST /api/market/update</code></small>
+                <span class="sr-only">Chart is empty, waiting for market data</span>
+            </div>
+        }
+        else
+        {
+            <LineChart @ref="lineChart" TItem="double" />
+            <div class="sr-only" aria-live="polite">
+                Chart updated with @chartDataPoints.Count data points. 
+                @if (lastMarketEvent != null)
+                {
+                    <span>Latest price: @lastMarketEvent.Price?.ToString("C2") for @lastMarketEvent.Symbol at @lastMarketEvent.Timestamp?.ToString("HH:mm:ss")</span>
+                }
+            </div>
+        }
+    </div>
+
+    @if (lastMarketEvent != null)
+    {
+        <div class="chart-stats modern-card">
+            <div class="stat-item">
+                <span class="stat-label">Latest Price</span>
+                <span class="stat-value price-display @lastMarketEvent.Trend">
+                    $@(lastMarketEvent.Price?.ToString("F2") ?? "N/A")
+                </span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Symbol</span>
+                <span class="stat-value">@(lastMarketEvent.Symbol ?? "N/A")</span>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .chart-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-lg);
+    }
+
+    .chart-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+    }
+
+    .chart-title {
+        margin: 0;
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+    }
+
+    .chart-info {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background: rgba(var(--color-primary-rgb), 0.1);
+        border: 1px solid rgba(var(--color-primary-rgb), 0.2);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-size-xs);
+        color: var(--color-primary);
+    }
+
+    .chart-container {
+        min-height: 400px;
+        padding: var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .chart-loading, .chart-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-md);
+        text-align: center;
+        color: var(--color-text-secondary);
+    }
+
+    .loading-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--color-border);
+        border-top: 3px solid var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .chart-empty h4 {
+        margin: 0;
+        font-size: var(--font-size-lg);
+        color: var(--color-text-primary);
+    }
+
+    .chart-empty small {
+        font-family: var(--font-family-mono);
+        font-size: var(--font-size-xs);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background: rgba(var(--color-info-rgb), 0.1);
+        border: 1px solid rgba(var(--color-info-rgb), 0.2);
+        border-radius: var(--radius-sm);
+        color: var(--color-info);
+    }
+
+    .chart-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-md);
+        padding: var(--spacing-lg);
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .stat-label {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        font-weight: var(--font-weight-medium);
+    }
+
+    .stat-value {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+    }
+
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive Design for Chart */
+    
+    /* Large screens */
+    @@media (min-width: 1200px) {
+        .chart-container {
+            min-height: 500px;
+            padding: var(--spacing-xl);
+        }
+        
+        .chart-title {
+            font-size: var(--font-size-2xl);
+        }
+        
+        .chart-stats {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+        }
+    }
+
+    /* Medium screens - tablets */
+    @@media (max-width: 1199px) and (min-width: 769px) {
+        .chart-container {
+            min-height: 350px;
+            padding: var(--spacing-lg);
+        }
+        
+        .chart-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--spacing-sm);
+        }
+        
+        .chart-title {
+            text-align: center;
+        }
+        
+        .chart-info {
+            align-self: center;
+        }
+        
+        .chart-stats {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-md);
+        }
+    }
+
+    /* Mobile devices */
+    @@media (max-width: 768px) {
+        .chart-wrapper {
+            gap: var(--spacing-md);
+        }
+        
+        .chart-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--spacing-sm);
+            text-align: center;
+        }
+        
+        .chart-title {
+            font-size: var(--font-size-lg);
+        }
+        
+        .chart-info {
+            align-self: center;
+            font-size: var(--font-size-xs);
+        }
+        
+        .chart-container {
+            min-height: 300px;
+            padding: var(--spacing-md);
+        }
+        
+        .chart-empty h4 {
+            font-size: var(--font-size-base);
+        }
+        
+        .chart-empty p {
+            font-size: var(--font-size-sm);
+        }
+        
+        .chart-empty small {
+            font-size: var(--font-size-xs);
+            padding: var(--spacing-xs);
+        }
+        
+        .chart-stats {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+        }
+        
+        .stat-item {
+            padding: var(--spacing-sm);
+            background: rgba(var(--color-surface-rgb), 0.5);
+            border-radius: var(--radius-md);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: var(--font-size-base);
+        }
+    }
+
+    /* Small mobile devices */
+    @@media (max-width: 480px) {
+        .chart-container {
+            min-height: 250px;
+            padding: var(--spacing-sm);
+        }
+        
+        .chart-title {
+            font-size: var(--font-size-base);
+        }
+        
+        .chart-stats {
+            padding: var(--spacing-sm);
+        }
+        
+        .stat-item {
+            padding: var(--spacing-xs);
+        }
+        
+        .stat-label {
+            font-size: var(--font-size-xs);
+        }
+        
+        .stat-value {
+            font-size: var(--font-size-sm);
+        }
+    }
+
+    /* Landscape mobile optimization */
+    @@media (max-height: 500px) and (orientation: landscape) {
+        .chart-container {
+            min-height: 200px;
+        }
+        
+        .chart-stats {
+            display: none; /* Hide stats in landscape to save space */
+        }
+    }
+</style>
 
 @code {
     private LineChart<double>? lineChart;
-    private LineChartDataset<double> dataset = new()
-    {
-        Label = "Price",
-        BackgroundColor = "rgba(75, 192, 192, 0.2)",
-        BorderColor = "rgba(75, 192, 192, 1)",
-        Data = new List<double>(),
-    };
+    private List<ChartDataPoint> chartDataPoints = new();
+    private MarketEvent? lastMarketEvent;
+    private bool isChartLoading = true;
+    private bool isDisposed = false;
+    private HubConnection? connection;
+    private const int MaxDataPoints = 50;
+    private const int DataCleanupThreshold = 60; // Clean up when we exceed this
+    private DateTime lastCleanup = DateTime.Now;
 
-    private List<string> labels = new();
+    private class ChartDataPoint
+    {
+        public string Label { get; set; } = string.Empty;
+        public double Value { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-        await ConnectToSignalR();
+        await InitializeSignalR();
     }
 
-    private async Task ConnectToSignalR()
+    private async Task InitializeSignalR()
     {
-        var connection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/markethub"))
-            .WithAutomaticReconnect()
-            .Build();
-
-        connection.On<MarketEvent>("ReceiveMarketEvent", async marketEvent =>
+        try
         {
-            try
-            {
-                // Safely handle nullable types
-                labels.Add(marketEvent.Timestamp?.ToShortTimeString() ?? "N/A");
-                dataset.Data.Add((double)(marketEvent.Price ?? 0));
+            connection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/markethub"))
+                .WithAutomaticReconnect(new[] { 
+                    TimeSpan.Zero, 
+                    TimeSpan.FromSeconds(2), 
+                    TimeSpan.FromSeconds(10), 
+                    TimeSpan.FromSeconds(30) 
+                })
+                .Build();
 
-                if (lineChart != null)
+            connection.On<MarketEvent>("ReceiveMarketEvent", async marketEvent =>
+            {
+                if (isDisposed) return;
+
+                await InvokeAsync(async () =>
                 {
-                    await lineChart.Clear();
-                    await lineChart.AddLabelsDatasetsAndUpdate(labels, dataset);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Error updating chart");
-            }
-        });
+                    try
+                    {
+                        lastMarketEvent = marketEvent;
 
-        await connection.StartAsync();
+                        var dataPoint = new ChartDataPoint
+                        {
+                            Label = marketEvent.Timestamp?.ToString("HH:mm:ss") ?? DateTime.Now.ToString("HH:mm:ss"),
+                            Value = (double)(marketEvent.Price ?? 0),
+                            Timestamp = marketEvent.Timestamp ?? DateTime.Now
+                        };
+
+                        chartDataPoints.Add(dataPoint);
+
+                        // Efficient data point management
+                        if (chartDataPoints.Count > DataCleanupThreshold)
+                        {
+                            // Remove older data points in batches for better performance
+                            var itemsToRemove = chartDataPoints.Count - MaxDataPoints;
+                            chartDataPoints.RemoveRange(0, itemsToRemove);
+                            lastCleanup = DateTime.Now;
+                            
+                            // Force garbage collection if we haven't cleaned up recently
+                            if ((DateTime.Now - lastCleanup).TotalMinutes > 5)
+                            {
+                                GC.Collect(0, GCCollectionMode.Optimized);
+                            }
+                        }
+
+                        StateHasChanged();
+                        await UpdateChart();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "Error processing market event in chart");
+                    }
+                });
+            });
+
+            await connection.StartAsync();
+            Logger.LogInformation("SignalR connection started successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize SignalR connection");
+        }
+        finally
+        {
+            isChartLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
-    public class MarketEvent
+    private async Task UpdateChart()
     {
-        public string? Symbol { get; set; }
-        public decimal? Price { get; set; }
-        public DateTime? Timestamp { get; set; }
+        if (lineChart == null || isDisposed || !chartDataPoints.Any()) return;
+
+        try
+        {
+            // Batch chart updates to improve performance
+            var labels = chartDataPoints.Select(d => d.Label).ToArray();
+            var data = chartDataPoints.Select(d => d.Value).ToArray();
+            
+            var dataset = new LineChartDataset<double>
+            {
+                Label = "Price",
+                Data = data.ToList(),
+                BackgroundColor = "rgba(99, 102, 241, 0.1)",
+                BorderColor = "rgba(99, 102, 241, 1)",
+                BorderWidth = 2,
+                Fill = true,
+                Tension = 0.4f,
+                PointRadius = chartDataPoints.Count > 30 ? 0 : 2, // Hide points when too many for performance
+                PointHoverRadius = 4
+            };
+
+            await lineChart.Clear();
+            await lineChart.AddLabelsDatasetsAndUpdate(labels.ToList(), dataset);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating chart");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (isDisposed) return;
+        isDisposed = true;
+
+        if (connection != null)
+        {
+            await connection.DisposeAsync();
+        }
     }
 }

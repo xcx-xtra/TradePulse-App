@@ -1,0 +1,631 @@
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
+@inject NavigationManager Navigation
+@inject ILogger<ConnectionStatus> Logger
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div class="connection-status-container">
+    <div class="connection-status @GetStatusClass()" @onclick="OnStatusClick">
+        <div class="status-indicator">
+            <div class="status-icon">
+                @GetStatusIcon()
+            </div>
+            <div class="status-pulse @GetPulseClass()"></div>
+        </div>
+        
+        <div class="status-content">
+            <div class="status-text">@GetStatusText()</div>
+            <div class="status-details">@GetStatusDetails()</div>
+        </div>
+        
+        @if (IsReconnecting)
+        {
+            <div class="reconnection-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: @(reconnectionProgress)%"></div>
+                </div>
+                <span class="progress-text">Reconnecting... @reconnectionAttempt/@maxReconnectionAttempts</span>
+            </div>
+        }
+        
+        @if (connectionState == HubConnectionState.Disconnected && !IsReconnecting)
+        {
+            <button class="retry-button modern-btn" @onclick="ManualRetry" @onclick:stopPropagation="true">
+                <span class="retry-icon">🔄</span>
+                Retry
+            </button>
+        }
+    </div>
+    
+    @if (showDetails)
+    {
+        <div class="connection-details glass">
+            <div class="details-header">
+                <h4>Connection Details</h4>
+                <button class="close-btn" @onclick="ToggleDetails">✕</button>
+            </div>
+            
+            <div class="details-content">
+                <div class="detail-item">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">@connectionState</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Connected Since:</span>
+                    <span class="detail-value">@(connectedSince?.ToString("HH:mm:ss") ?? "N/A")</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Connection ID:</span>
+                    <span class="detail-value">@(connection?.ConnectionId ?? "N/A")</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Reconnection Attempts:</span>
+                    <span class="detail-value">@totalReconnectionAttempts</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Last Error:</span>
+                    <span class="detail-value error-text">@(lastError ?? "None")</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .connection-status-container {
+        position: relative;
+        z-index: 1000;
+    }
+
+    .connection-status {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-lg);
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border: 1px solid var(--glass-border);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        min-width: 200px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .connection-status::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: left var(--transition-base);
+    }
+
+    .connection-status:hover::before {
+        left: 100%;
+    }
+
+    .connection-status:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .connection-status.connected {
+        border-color: rgba(var(--color-success-rgb), 0.3);
+        background: linear-gradient(135deg, 
+            rgba(var(--color-success-rgb), 0.1) 0%, 
+            var(--glass-background) 100%);
+    }
+
+    .connection-status.disconnected {
+        border-color: rgba(var(--color-danger-rgb), 0.3);
+        background: linear-gradient(135deg, 
+            rgba(var(--color-danger-rgb), 0.1) 0%, 
+            var(--glass-background) 100%);
+    }
+
+    .connection-status.connecting {
+        border-color: rgba(var(--color-warning-rgb), 0.3);
+        background: linear-gradient(135deg, 
+            rgba(var(--color-warning-rgb), 0.1) 0%, 
+            var(--glass-background) 100%);
+    }
+
+    .status-indicator {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+    }
+
+    .status-icon {
+        font-size: 1.2rem;
+        z-index: 2;
+        position: relative;
+    }
+
+    .status-pulse {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        opacity: 0.6;
+        animation: pulse 2s infinite;
+    }
+
+    .status-pulse.connected {
+        background: radial-gradient(circle, rgba(var(--color-success-rgb), 0.3) 0%, transparent 70%);
+    }
+
+    .status-pulse.disconnected {
+        background: radial-gradient(circle, rgba(var(--color-danger-rgb), 0.3) 0%, transparent 70%);
+    }
+
+    .status-pulse.connecting {
+        background: radial-gradient(circle, rgba(var(--color-warning-rgb), 0.3) 0%, transparent 70%);
+        animation: pulse-warning 1s infinite;
+    }
+
+    .status-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .status-text {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+    }
+
+    .status-details {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+    }
+
+    .reconnection-progress {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        margin-left: var(--spacing-md);
+        min-width: 120px;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 4px;
+        background: rgba(var(--color-border-rgb), 0.3);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-success));
+        border-radius: var(--radius-sm);
+        transition: width var(--transition-base);
+        animation: progress-shine 2s infinite;
+    }
+
+    .progress-text {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        text-align: center;
+    }
+
+    .retry-button {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        border: 1px solid rgba(var(--color-primary-rgb), 0.3);
+        background: rgba(var(--color-primary-rgb), 0.1);
+        color: var(--color-primary);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all var(--transition-base);
+    }
+
+    .retry-button:hover {
+        background: rgba(var(--color-primary-rgb), 0.2);
+        transform: scale(1.05);
+    }
+
+    .retry-icon {
+        animation: spin 1s linear infinite;
+    }
+
+    .connection-details {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: var(--spacing-sm);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-lg);
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--shadow-lg);
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .details-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-md);
+        padding-bottom: var(--spacing-sm);
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .details-header h4 {
+        margin: 0;
+        font-size: var(--font-size-md);
+        color: var(--color-text-primary);
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        padding: var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-base);
+    }
+
+    .close-btn:hover {
+        background: rgba(var(--color-danger-rgb), 0.1);
+        color: var(--color-danger);
+    }
+
+    .details-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-xs) 0;
+    }
+
+    .detail-label {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .detail-value {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        font-family: monospace;
+    }
+
+    .error-text {
+        color: var(--color-danger);
+        font-size: var(--font-size-xs);
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @@keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.6; }
+        50% { transform: scale(1.2); opacity: 0.3; }
+    }
+
+    @@keyframes pulse-warning {
+        0%, 100% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.3); opacity: 0.4; }
+    }
+
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    @@keyframes progress-shine {
+        0% { box-shadow: 0 0 5px rgba(var(--color-primary-rgb), 0.3); }
+        50% { box-shadow: 0 0 15px rgba(var(--color-primary-rgb), 0.6); }
+        100% { box-shadow: 0 0 5px rgba(var(--color-primary-rgb), 0.3); }
+    }
+
+    @@keyframes slideDown {
+        from { 
+            opacity: 0; 
+            transform: translateY(-10px); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .connection-status {
+            min-width: 150px;
+        }
+
+        .connection-details {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90vw;
+            max-width: 400px;
+            z-index: 1001;
+        }
+    }
+</style>
+
+@code {
+    private HubConnection? connection;
+    private HubConnectionState connectionState = HubConnectionState.Disconnected;
+    private bool showDetails = false;
+    private bool isDisposed = false;
+    private DateTime? connectedSince;
+    private string? lastError;
+    private int totalReconnectionAttempts = 0;
+    
+    // Reconnection properties
+    private bool IsReconnecting => connectionState == HubConnectionState.Reconnecting;
+    private int reconnectionProgress = 0;
+    private int reconnectionAttempt = 0;
+    private const int maxReconnectionAttempts = 5;
+    private Timer? progressTimer;
+
+    [Parameter] public EventCallback<HubConnectionState> OnConnectionStateChanged { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InitializeConnection();
+    }
+
+    private async Task InitializeConnection()
+    {
+        try
+        {
+            connection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/markethub"))
+                .WithAutomaticReconnect(new CustomRetryPolicy())
+                .Build();
+
+            connection.Closed += OnConnectionClosed;
+            connection.Reconnecting += OnReconnecting;
+            connection.Reconnected += OnReconnected;
+
+            await StartConnection();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize SignalR connection");
+            lastError = ex.Message;
+            await UpdateConnectionState(HubConnectionState.Disconnected);
+        }
+    }
+
+    private async Task StartConnection()
+    {
+        try
+        {
+            await UpdateConnectionState(HubConnectionState.Connecting);
+            await connection!.StartAsync();
+            await UpdateConnectionState(HubConnectionState.Connected);
+            connectedSince = DateTime.Now;
+            lastError = null;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to start SignalR connection");
+            lastError = ex.Message;
+            await UpdateConnectionState(HubConnectionState.Disconnected);
+        }
+    }
+
+    private async Task OnConnectionClosed(Exception? exception)
+    {
+        if (isDisposed) return;
+
+        await InvokeAsync(async () =>
+        {
+            if (exception != null)
+            {
+                Logger.LogWarning(exception, "SignalR connection closed with error");
+                lastError = exception.Message;
+            }
+            else
+            {
+                Logger.LogInformation("SignalR connection closed gracefully");
+                lastError = null;
+            }
+
+            connectedSince = null;
+            await UpdateConnectionState(HubConnectionState.Disconnected);
+        });
+    }
+
+    private async Task OnReconnecting(Exception? exception)
+    {
+        if (isDisposed) return;
+
+        await InvokeAsync(async () =>
+        {
+            Logger.LogInformation("SignalR connection reconnecting...");
+            totalReconnectionAttempts++;
+            reconnectionAttempt++;
+            
+            if (exception != null)
+            {
+                lastError = exception.Message;
+            }
+
+            await UpdateConnectionState(HubConnectionState.Reconnecting);
+            StartReconnectionProgress();
+        });
+    }
+
+    private async Task OnReconnected(string? connectionId)
+    {
+        if (isDisposed) return;
+
+        await InvokeAsync(async () =>
+        {
+            Logger.LogInformation($"SignalR connection reconnected with ID: {connectionId}");
+            connectedSince = DateTime.Now;
+            reconnectionAttempt = 0;
+            lastError = null;
+            StopReconnectionProgress();
+            
+            await UpdateConnectionState(HubConnectionState.Connected);
+        });
+    }
+
+    private void StartReconnectionProgress()
+    {
+        reconnectionProgress = 0;
+        progressTimer?.Dispose();
+        
+        progressTimer = new Timer(async _ =>
+        {
+            if (connectionState == HubConnectionState.Reconnecting && reconnectionProgress < 100)
+            {
+                reconnectionProgress += 2;
+                await InvokeAsync(StateHasChanged);
+            }
+        }, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(100));
+    }
+
+    private void StopReconnectionProgress()
+    {
+        progressTimer?.Dispose();
+        reconnectionProgress = 100;
+    }
+
+    private async Task UpdateConnectionState(HubConnectionState newState)
+    {
+        if (connectionState != newState)
+        {
+            connectionState = newState;
+            await OnConnectionStateChanged.InvokeAsync(newState);
+            StateHasChanged();
+        }
+    }
+
+    private string GetStatusClass()
+    {
+        return connectionState switch
+        {
+            HubConnectionState.Connected => "connected",
+            HubConnectionState.Disconnected => "disconnected",
+            _ => "connecting"
+        };
+    }
+
+    private string GetPulseClass()
+    {
+        return connectionState switch
+        {
+            HubConnectionState.Connected => "connected",
+            HubConnectionState.Disconnected => "disconnected",
+            _ => "connecting"
+        };
+    }
+
+    private string GetStatusIcon()
+    {
+        return connectionState switch
+        {
+            HubConnectionState.Connected => "🟢",
+            HubConnectionState.Disconnected => "🔴",
+            HubConnectionState.Connecting => "🟡",
+            HubConnectionState.Reconnecting => "🟡",
+            _ => "⚪"
+        };
+    }
+
+    private string GetStatusText()
+    {
+        return connectionState switch
+        {
+            HubConnectionState.Connected => "Connected",
+            HubConnectionState.Disconnected => "Disconnected",
+            HubConnectionState.Connecting => "Connecting...",
+            HubConnectionState.Reconnecting => "Reconnecting...",
+            _ => "Unknown"
+        };
+    }
+
+    private string GetStatusDetails()
+    {
+        return connectionState switch
+        {
+            HubConnectionState.Connected => "Real-time data active",
+            HubConnectionState.Disconnected => "No real-time data",
+            HubConnectionState.Connecting => "Establishing connection",
+            HubConnectionState.Reconnecting => $"Attempt {reconnectionAttempt}/{maxReconnectionAttempts}",
+            _ => ""
+        };
+    }
+
+    private async Task ManualRetry()
+    {
+        if (connection != null && connectionState == HubConnectionState.Disconnected)
+        {
+            Logger.LogInformation("Manual connection retry initiated");
+            await StartConnection();
+        }
+    }
+
+    private void OnStatusClick()
+    {
+        ToggleDetails();
+    }
+
+    private void ToggleDetails()
+    {
+        showDetails = !showDetails;
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (isDisposed) return;
+        isDisposed = true;
+
+        progressTimer?.Dispose();
+
+        if (connection != null)
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    // Custom retry policy for more control over reconnection
+    private class CustomRetryPolicy : IRetryPolicy
+    {
+        public TimeSpan? NextRetryDelay(RetryContext retryContext)
+        {
+            if (retryContext.PreviousRetryCount > maxReconnectionAttempts)
+                return null;
+
+            return TimeSpan.FromSeconds(Math.Pow(2, retryContext.PreviousRetryCount));
+        }
+    }
+}

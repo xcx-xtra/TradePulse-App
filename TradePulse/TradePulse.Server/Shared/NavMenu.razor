@@ -1,1 +1,296 @@
 @using TradePulse.Server.Shared
+
+<nav class="nav-menu @(isCollapsed ? "collapsed" : "expanded")">
+    <div class="nav-header">
+        <button class="nav-toggle mobile-only" @onclick="ToggleNavigation" aria-label="Toggle navigation">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+    </div>
+    
+    <div class="nav-content @(isCollapsed ? "hidden" : "visible")">
+        <ul class="nav-list" role="menubar" aria-label="Main navigation">
+            <li class="nav-item" role="none">
+                <a href="/dashboard" 
+                   class="nav-link @GetActiveClass("/dashboard")" 
+                   @onclick="CloseNavigation"
+                   role="menuitem"
+                   aria-current="@(GetActiveClass("/dashboard") == "active" ? "page" : "false")">
+                    <span class="nav-icon" aria-hidden="true">📊</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item" role="none">
+                <a href="/markets" 
+                   class="nav-link @GetActiveClass("/markets")" 
+                   @onclick="CloseNavigation"
+                   role="menuitem"
+                   aria-current="@(GetActiveClass("/markets") == "active" ? "page" : "false")">
+                    <span class="nav-icon" aria-hidden="true">📈</span>
+                    <span class="nav-text">Markets</span>
+                </a>
+            </li>
+            <li class="nav-item" role="none">
+                <a href="/analytics" 
+                   class="nav-link @GetActiveClass("/analytics")" 
+                   @onclick="CloseNavigation"
+                   role="menuitem"
+                   aria-current="@(GetActiveClass("/analytics") == "active" ? "page" : "false")">
+                    <span class="nav-icon" aria-hidden="true">📋</span>
+                    <span class="nav-text">Analytics</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+@if (!isCollapsed)
+{
+    <div class="nav-overlay mobile-only" @onclick="CloseNavigation"></div>
+}
+
+<style>
+    .nav-menu {
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border-bottom: 1px solid var(--glass-border);
+        transition: all var(--transition-normal);
+    }
+
+    .nav-header {
+        display: none;
+        padding: var(--spacing-md);
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .nav-toggle {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 44px;
+        height: 44px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: var(--spacing-sm);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+    }
+
+    .nav-toggle:hover {
+        background: var(--color-surface-hover);
+    }
+
+    .hamburger-line {
+        width: 24px;
+        height: 2px;
+        background: var(--color-text-primary);
+        margin: 2px 0;
+        transition: all var(--transition-fast);
+        border-radius: 1px;
+    }
+
+    .nav-content {
+        transition: all var(--transition-normal);
+    }
+
+    .nav-list {
+        display: flex;
+        list-style: none;
+        margin: 0;
+        padding: var(--spacing-sm) var(--spacing-lg);
+        gap: var(--spacing-md);
+    }
+
+    .nav-item {
+        position: relative;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+        text-decoration: none;
+        color: var(--color-text-secondary);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+        font-weight: var(--font-weight-medium);
+        min-height: 44px; /* Touch-friendly */
+    }
+
+    .nav-link:hover {
+        color: var(--color-primary);
+        background: rgba(var(--color-primary-rgb), 0.1);
+        transform: translateY(-1px);
+    }
+
+    .nav-link.active {
+        color: var(--color-primary);
+        background: rgba(var(--color-primary-rgb), 0.15);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .nav-icon {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .nav-text {
+        font-size: var(--font-size-sm);
+        white-space: nowrap;
+    }
+
+    .nav-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: var(--z-modal-backdrop);
+        opacity: 0;
+        visibility: hidden;
+        transition: all var(--transition-normal);
+    }
+
+    .nav-overlay.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Desktop styles */
+    @@media (min-width: 769px) {
+        .nav-menu {
+            position: relative;
+        }
+
+        .nav-content {
+            display: block !important;
+        }
+
+        .mobile-only {
+            display: none !important;
+        }
+    }
+
+    /* Mobile styles */
+    @@media (max-width: 768px) {
+        .nav-menu {
+            position: relative;
+        }
+
+        .nav-header {
+            display: block;
+        }
+
+        .nav-content {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--glass-background);
+            backdrop-filter: var(--glass-backdrop-filter);
+            -webkit-backdrop-filter: var(--glass-backdrop-filter);
+            border: 1px solid var(--glass-border);
+            border-top: none;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            z-index: var(--z-dropdown);
+            transform: translateY(-10px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-normal);
+        }
+
+        .nav-content.visible {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .nav-list {
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-md);
+        }
+
+        .nav-link {
+            padding: var(--spacing-md);
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .nav-text {
+            font-size: var(--font-size-base);
+        }
+
+        .desktop-only {
+            display: none !important;
+        }
+    }
+
+    /* Small mobile adjustments */
+    @@media (max-width: 480px) {
+        .nav-list {
+            padding: var(--spacing-sm);
+        }
+
+        .nav-link {
+            padding: var(--spacing-sm) var(--spacing-md);
+        }
+
+        .nav-icon {
+            font-size: 1rem;
+        }
+
+        .nav-text {
+            font-size: var(--font-size-sm);
+        }
+    }
+</style>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    
+    private bool isCollapsed = true;
+    private string currentUrl = "";
+
+    protected override void OnInitialized()
+    {
+        currentUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = Navigation.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    private void ToggleNavigation()
+    {
+        isCollapsed = !isCollapsed;
+        StateHasChanged();
+    }
+
+    private void CloseNavigation()
+    {
+        isCollapsed = true;
+        StateHasChanged();
+    }
+
+    private string GetActiveClass(string href)
+    {
+        var relativePath = href.TrimStart('/');
+        return currentUrl.StartsWith(relativePath, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

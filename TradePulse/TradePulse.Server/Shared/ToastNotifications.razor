@@ -1,0 +1,390 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div class="toast-container" id="toast-container">
+    @foreach (var toast in toasts)
+    {
+        <div class="toast @GetToastClass(toast.Type) @(toast.IsVisible ? "show" : "")" 
+             style="animation-delay: @(toast.Index * 100)ms">
+            <div class="toast-content">
+                <div class="toast-icon">@GetToastIcon(toast.Type)</div>
+                <div class="toast-body">
+                    <div class="toast-title">@toast.Title</div>
+                    @if (!string.IsNullOrEmpty(toast.Message))
+                    {
+                        <div class="toast-message">@toast.Message</div>
+                    }
+                </div>
+                <button class="toast-close" @onclick="() => DismissToast(toast.Id)">✕</button>
+            </div>
+            
+            @if (toast.ShowProgress)
+            {
+                <div class="toast-progress">
+                    <div class="progress-bar" style="animation-duration: @(toast.Duration)ms"></div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .toast-container {
+        position: fixed;
+        top: var(--spacing-lg);
+        right: var(--spacing-lg);
+        z-index: 1050;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        pointer-events: none;
+        max-width: 400px;
+    }
+
+    .toast {
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transform: translateX(100%);
+        opacity: 0;
+        transition: all var(--transition-base);
+        pointer-events: all;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+        opacity: 1;
+        animation: slideInRight 0.3s ease-out;
+    }
+
+    .toast.success {
+        border-left: 4px solid var(--color-success);
+        background: linear-gradient(135deg, 
+            rgba(var(--color-success-rgb), 0.1) 0%, 
+            var(--glass-background) 100%);
+    }
+
+    .toast.error {
+        border-left: 4px solid var(--color-danger);
+        background: linear-gradient(135deg, 
+            rgba(var(--color-danger-rgb), 0.1) 0%, 
+            var(--glass-background) 100%);
+    }
+
+    .toast.warning {
+        border-left: 4px solid var(--color-warning);
+        background: linear-gradient(135deg, 
+            rgba(var(--color-warning-rgb), 0.1) 0%, 
+            var(--glass-background) 100%);
+    }
+
+    .toast.info {
+        border-left: 4px solid var(--color-info);
+        background: linear-gradient(135deg, 
+            rgba(var(--color-info-rgb), 0.1) 0%, 
+            var(--glass-background) 100%);
+    }
+
+    .toast-content {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md);
+    }
+
+    .toast-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .toast-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .toast-title {
+        font-size: var(--font-size-md);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        margin-bottom: var(--spacing-xs);
+        line-height: 1.4;
+    }
+
+    .toast-message {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        line-height: 1.4;
+        word-break: break-word;
+    }
+
+    .toast-close {
+        background: none;
+        border: none;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        padding: var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-base);
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-sm);
+    }
+
+    .toast-close:hover {
+        background: rgba(var(--color-text-secondary-rgb), 0.1);
+        color: var(--color-text-primary);
+    }
+
+    .toast-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: rgba(var(--color-border-rgb), 0.3);
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+        animation: progressCountdown linear forwards;
+        transform-origin: left;
+    }
+
+    .toast.success .progress-bar {
+        background: var(--color-success);
+    }
+
+    .toast.error .progress-bar {
+        background: var(--color-danger);
+    }
+
+    .toast.warning .progress-bar {
+        background: var(--color-warning);
+    }
+
+    .toast.info .progress-bar {
+        background: var(--color-info);
+    }
+
+    @@keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes progressCountdown {
+        from {
+            transform: scaleX(1);
+        }
+        to {
+            transform: scaleX(0);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .toast-container {
+            top: var(--spacing-md);
+            right: var(--spacing-md);
+            left: var(--spacing-md);
+            max-width: none;
+        }
+
+        .toast-content {
+            padding: var(--spacing-sm);
+        }
+
+        .toast-title {
+            font-size: var(--font-size-sm);
+        }
+
+        .toast-message {
+            font-size: var(--font-size-xs);
+        }
+    }
+</style>
+
+@code {
+    private List<ToastMessage> toasts = new();
+    private int nextId = 1;
+    private Timer? cleanupTimer;
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnToastAdded += AddToast;
+        
+        // Cleanup timer to remove old toasts
+        cleanupTimer = new Timer(CleanupToasts, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    private void AddToast(ToastMessage toast)
+    {
+        toast.Id = nextId++;
+        toast.Index = toasts.Count;
+        toast.CreatedAt = DateTime.Now;
+        
+        toasts.Add(toast);
+        
+        InvokeAsync(() =>
+        {
+            StateHasChanged();
+            
+            // Auto-dismiss after duration
+            if (toast.AutoDismiss)
+            {
+                _ = Task.Delay(toast.Duration).ContinueWith(_ =>
+                {
+                    InvokeAsync(() => DismissToast(toast.Id));
+                });
+            }
+        });
+    }
+
+    private void DismissToast(int toastId)
+    {
+        var toast = toasts.FirstOrDefault(t => t.Id == toastId);
+        if (toast != null)
+        {
+            toast.IsVisible = false;
+            StateHasChanged();
+            
+            // Remove after animation
+            _ = Task.Delay(300).ContinueWith(_ =>
+            {
+                InvokeAsync(() =>
+                {
+                    toasts.Remove(toast);
+                    StateHasChanged();
+                });
+            });
+        }
+    }
+
+    private void CleanupToasts(object? state)
+    {
+        var now = DateTime.Now;
+        var toastsToRemove = toasts.Where(t => 
+            t.AutoDismiss && 
+            (now - t.CreatedAt).TotalMilliseconds > t.Duration + 500
+        ).ToList();
+
+        if (toastsToRemove.Any())
+        {
+            InvokeAsync(() =>
+            {
+                foreach (var toast in toastsToRemove)
+                {
+                    toasts.Remove(toast);
+                }
+                StateHasChanged();
+            });
+        }
+    }
+
+    private string GetToastClass(ToastType type)
+    {
+        return type.ToString().ToLower();
+    }
+
+    private string GetToastIcon(ToastType type)
+    {
+        return type switch
+        {
+            ToastType.Success => "✅",
+            ToastType.Error => "❌",
+            ToastType.Warning => "⚠️",
+            ToastType.Info => "ℹ️",
+            _ => "📢"
+        };
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnToastAdded -= AddToast;
+        cleanupTimer?.Dispose();
+    }
+}
+
+@code {
+    public class ToastMessage
+    {
+        public int Id { get; set; }
+        public int Index { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public ToastType Type { get; set; } = ToastType.Info;
+        public int Duration { get; set; } = 5000;
+        public bool AutoDismiss { get; set; } = true;
+        public bool ShowProgress { get; set; } = true;
+        public bool IsVisible { get; set; } = true;
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public enum ToastType
+    {
+        Success,
+        Error,
+        Warning,
+        Info
+    }
+}
+
+@* Toast Service - This would typically be a separate service file *@
+@code {
+    public static class ToastService
+    {
+        public static event Action<ToastMessage>? OnToastAdded;
+
+        public static void ShowSuccess(string title, string? message = null, int duration = 5000)
+        {
+            Show(title, message, ToastType.Success, duration);
+        }
+
+        public static void ShowError(string title, string? message = null, int duration = 8000)
+        {
+            Show(title, message, ToastType.Error, duration);
+        }
+
+        public static void ShowWarning(string title, string? message = null, int duration = 6000)
+        {
+            Show(title, message, ToastType.Warning, duration);
+        }
+
+        public static void ShowInfo(string title, string? message = null, int duration = 5000)
+        {
+            Show(title, message, ToastType.Info, duration);
+        }
+
+        private static void Show(string title, string? message, ToastType type, int duration)
+        {
+            var toast = new ToastMessage
+            {
+                Title = title,
+                Message = message ?? string.Empty,
+                Type = type,
+                Duration = duration,
+                AutoDismiss = true,
+                ShowProgress = true
+            };
+
+            OnToastAdded?.Invoke(toast);
+        }
+    }
+}

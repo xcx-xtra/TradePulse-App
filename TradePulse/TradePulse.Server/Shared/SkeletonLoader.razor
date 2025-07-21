@@ -1,0 +1,380 @@
+@* Skeleton Loading Component for various UI elements *@
+
+<div class="skeleton-container @(IsVisible ? "visible" : "hidden")">
+    @if (Type == SkeletonType.Card)
+    {
+        <div class="skeleton-card">
+            <div class="skeleton-header">
+                <div class="skeleton-avatar"></div>
+                <div class="skeleton-lines">
+                    <div class="skeleton-line title"></div>
+                    <div class="skeleton-line subtitle"></div>
+                </div>
+            </div>
+            <div class="skeleton-content">
+                <div class="skeleton-line full"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line short"></div>
+            </div>
+        </div>
+    }
+    else if (Type == SkeletonType.List)
+    {
+        <div class="skeleton-list">
+            @for (int i = 0; i < (Count ?? 5); i++)
+            {
+                <div class="skeleton-list-item" style="animation-delay: @(i * 100)ms">
+                    <div class="skeleton-icon"></div>
+                    <div class="skeleton-lines">
+                        <div class="skeleton-line title"></div>
+                        <div class="skeleton-line subtitle"></div>
+                    </div>
+                    <div class="skeleton-value"></div>
+                </div>
+            }
+        </div>
+    }
+    else if (Type == SkeletonType.Chart)
+    {
+        <div class="skeleton-chart">
+            <div class="skeleton-chart-header">
+                <div class="skeleton-line title"></div>
+                <div class="skeleton-controls">
+                    <div class="skeleton-button"></div>
+                    <div class="skeleton-button"></div>
+                </div>
+            </div>
+            <div class="skeleton-chart-content">
+                <div class="skeleton-chart-bars">
+                    @for (int i = 0; i < 12; i++)
+                    {
+                        <div class="skeleton-bar" style="height: @(Random.Shared.Next(30, 100))%; animation-delay: @(i * 50)ms"></div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else if (Type == SkeletonType.Table)
+    {
+        <div class="skeleton-table">
+            <div class="skeleton-table-header">
+                @for (int i = 0; i < (Columns ?? 4); i++)
+                {
+                    <div class="skeleton-line header-cell"></div>
+                }
+            </div>
+            @for (int row = 0; row < (Count ?? 8); row++)
+            {
+                <div class="skeleton-table-row" style="animation-delay: @(row * 80)ms">
+                    @for (int col = 0; col < (Columns ?? 4); col++)
+                    {
+                        <div class="skeleton-line table-cell"></div>
+                    }
+                </div>
+            }
+        </div>
+    }
+    else if (Type == SkeletonType.Custom)
+    {
+        <div class="skeleton-custom">
+            @ChildContent
+        </div>
+    }
+</div>
+
+<style>
+    .skeleton-container {
+        animation: fadeIn 0.3s ease-out;
+        transition: opacity var(--transition-base);
+    }
+
+    .skeleton-container.visible {
+        opacity: 1;
+    }
+
+    .skeleton-container.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* Base skeleton styles */
+    .skeleton-line,
+    .skeleton-avatar,
+    .skeleton-icon,
+    .skeleton-value,
+    .skeleton-button,
+    .skeleton-bar {
+        background: linear-gradient(90deg, 
+            rgba(var(--color-border-rgb), 0.2) 25%, 
+            rgba(var(--color-border-rgb), 0.4) 50%, 
+            rgba(var(--color-border-rgb), 0.2) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite;
+        border-radius: var(--radius-sm);
+    }
+
+    /* Card Skeleton */
+    .skeleton-card {
+        padding: var(--spacing-lg);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-surface);
+    }
+
+    .skeleton-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .skeleton-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .skeleton-lines {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .skeleton-line.title {
+        height: 20px;
+        width: 70%;
+    }
+
+    .skeleton-line.subtitle {
+        height: 16px;
+        width: 50%;
+    }
+
+    .skeleton-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .skeleton-line.full {
+        height: 16px;
+        width: 100%;
+    }
+
+    .skeleton-line.medium {
+        height: 16px;
+        width: 80%;
+    }
+
+    .skeleton-line.short {
+        height: 16px;
+        width: 60%;
+    }
+
+    /* List Skeleton */
+    .skeleton-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .skeleton-list-item {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+        animation: fadeInUp 0.6s ease-out both;
+    }
+
+    .skeleton-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-md);
+        flex-shrink: 0;
+    }
+
+    .skeleton-value {
+        width: 80px;
+        height: 24px;
+        border-radius: var(--radius-sm);
+        margin-left: auto;
+    }
+
+    /* Chart Skeleton */
+    .skeleton-chart {
+        padding: var(--spacing-lg);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-surface);
+        height: 300px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .skeleton-chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .skeleton-controls {
+        display: flex;
+        gap: var(--spacing-sm);
+    }
+
+    .skeleton-button {
+        width: 80px;
+        height: 32px;
+        border-radius: var(--radius-md);
+    }
+
+    .skeleton-chart-content {
+        flex: 1;
+        display: flex;
+        align-items: end;
+        padding: var(--spacing-md) 0;
+    }
+
+    .skeleton-chart-bars {
+        display: flex;
+        align-items: end;
+        gap: var(--spacing-xs);
+        width: 100%;
+        height: 100%;
+    }
+
+    .skeleton-bar {
+        flex: 1;
+        min-height: 20px;
+        border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+        animation: shimmer 2s infinite, growUp 0.8s ease-out both;
+    }
+
+    /* Table Skeleton */
+    .skeleton-table {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        background: var(--color-surface);
+    }
+
+    .skeleton-table-header {
+        display: grid;
+        grid-template-columns: repeat(var(--columns, 4), 1fr);
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        background: rgba(var(--color-border-rgb), 0.1);
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .skeleton-line.header-cell {
+        height: 18px;
+        width: 90%;
+    }
+
+    .skeleton-table-row {
+        display: grid;
+        grid-template-columns: repeat(var(--columns, 4), 1fr);
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        border-bottom: 1px solid rgba(var(--color-border-rgb), 0.3);
+        animation: fadeInUp 0.6s ease-out both;
+    }
+
+    .skeleton-table-row:last-child {
+        border-bottom: none;
+    }
+
+    .skeleton-line.table-cell {
+        height: 16px;
+        width: 85%;
+    }
+
+    /* Custom skeleton */
+    .skeleton-custom {
+        /* Container for custom skeleton content */
+    }
+
+    /* Animations */
+    @@keyframes shimmer {
+        0% {
+            background-position: -200% 0;
+        }
+        100% {
+            background-position: 200% 0;
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes growUp {
+        from {
+            transform: scaleY(0);
+        }
+        to {
+            transform: scaleY(1);
+        }
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .skeleton-card,
+        .skeleton-chart {
+            padding: var(--spacing-md);
+        }
+
+        .skeleton-chart {
+            height: 200px;
+        }
+
+        .skeleton-list-item {
+            padding: var(--spacing-sm);
+        }
+
+        .skeleton-table-header,
+        .skeleton-table-row {
+            padding: var(--spacing-sm);
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; } = true;
+    [Parameter] public SkeletonType Type { get; set; } = SkeletonType.Card;
+    [Parameter] public int? Count { get; set; }
+    [Parameter] public int? Columns { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    public enum SkeletonType
+    {
+        Card,
+        List,
+        Chart,
+        Table,
+        Custom
+    }
+}

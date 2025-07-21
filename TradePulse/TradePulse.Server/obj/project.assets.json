@@ -2,6 +2,24 @@
   "version": 3,
   "targets": {
     "net9.0": {
+      "Blazor.Bootstrap/3.3.1": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.AspNetCore.Components.Web": "9.0.0"
+        },
+        "compile": {
+          "lib/net9.0/BlazorBootstrap.dll": {}
+        },
+        "runtime": {
+          "lib/net9.0/BlazorBootstrap.dll": {}
+        },
+        "build": {
+          "buildTransitive/Blazor.Bootstrap.props": {}
+        },
+        "buildMultiTargeting": {
+          "buildMultiTargeting/Blazor.Bootstrap.props": {}
+        }
+      },
       "Blazorise/1.7.6": {
         "type": "package",
         "dependencies": {
@@ -519,6 +537,36 @@
     }
   },
   "libraries": {
+    "Blazor.Bootstrap/3.3.1": {
+      "sha512": "YJUyRsTYXr2SbDugC6zWSr2dz2hPK+8BYdigZ6oI0ERkFWkebzxMsDlF3eiomqBnVuG/PBB5KUfgw4Vp2LBCHA==",
+      "type": "package",
+      "path": "blazor.bootstrap/3.3.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "128X128.png",
+        "README.md",
+        "blazor.bootstrap.3.3.1.nupkg.sha512",
+        "blazor.bootstrap.nuspec",
+        "build/Blazor.Bootstrap.props",
+        "build/Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+        "build/Microsoft.AspNetCore.StaticWebAssets.props",
+        "buildMultiTargeting/Blazor.Bootstrap.props",
+        "buildTransitive/Blazor.Bootstrap.props",
+        "lib/net6.0/BlazorBootstrap.dll",
+        "lib/net8.0/BlazorBootstrap.dll",
+        "lib/net9.0/BlazorBootstrap.dll",
+        "staticwebassets/Blazor.Bootstrap.7t9tbfaemk.bundle.scp.css",
+        "staticwebassets/blazor.bootstrap.css",
+        "staticwebassets/blazor.bootstrap.js",
+        "staticwebassets/blazor.bootstrap.pdf.js",
+        "staticwebassets/blazor.bootstrap.sortable-list.js",
+        "staticwebassets/blazor.bootstrap.theme-switcher.js",
+        "staticwebassets/icon/128X128.png",
+        "staticwebassets/pdfjs-4.0.379.min.js",
+        "staticwebassets/pdfjs-4.0.379.worker.min.js"
+      ]
+    },
     "Blazorise/1.7.6": {
       "sha512": "RmJVJN7DJJYjDrI0qLThyR3JcOzoKvLMmoWkK6H06P8VKKKvL6FqVya1AK5WgRwh9ZUTrdd3c+83EgXSM0oC3g==",
       "type": "package",
@@ -1317,6 +1365,7 @@
   },
   "projectFileDependencyGroups": {
     "net9.0": [
+      "Blazor.Bootstrap >= 3.3.1",
       "Blazorise >= 1.7.6",
       "Blazorise.Bootstrap >= 1.7.6",
       "Blazorise.Charts >= 1.7.6",
@@ -1333,11 +1382,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj",
+      "projectUniqueName": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse-App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj",
       "projectName": "TradePulse.Server",
-      "projectPath": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj",
+      "projectPath": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse-App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj",
       "packagesPath": "C:\\Users\\Heatn\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\",
+      "outputPath": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse-App\\TradePulse\\TradePulse.Server\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Heatn\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -1364,12 +1413,16 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.100"
+      "SdkAnalysisLevel": "9.0.200"
     },
     "frameworks": {
       "net9.0": {
         "targetAlias": "net9.0",
         "dependencies": {
+          "Blazor.Bootstrap": {
+            "target": "Package",
+            "version": "[3.3.1, )"
+          },
           "Blazorise": {
             "target": "Package",
             "version": "[1.7.6, )"
@@ -1422,7 +1475,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.203/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

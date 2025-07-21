@@ -1,0 +1,352 @@
+@* Loading Spinner Component *@
+<div class="loading-spinner-container @(FullScreen ? "fullscreen" : "") @(IsVisible ? "visible" : "hidden")">
+    @if (ShowOverlay)
+    {
+        <div class="loading-overlay"></div>
+    }
+    
+    <div class="loading-content">
+        @if (Type == LoadingType.Spinner)
+        {
+            <div class="spinner @Size.ToString().ToLower()">
+                <div class="spinner-ring">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
+        }
+        else if (Type == LoadingType.Dots)
+        {
+            <div class="dots-loader @Size.ToString().ToLower()">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        }
+        else if (Type == LoadingType.Pulse)
+        {
+            <div class="pulse-loader @Size.ToString().ToLower()">
+                <div class="pulse-circle"></div>
+                <div class="pulse-circle"></div>
+                <div class="pulse-circle"></div>
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(Message))
+        {
+            <div class="loading-message">@Message</div>
+        }
+        
+        @if (ShowProgress && Progress.HasValue)
+        {
+            <div class="loading-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: @(Progress.Value)%"></div>
+                </div>
+                <div class="progress-text">@(Progress.Value)%</div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .loading-spinner-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        transition: opacity var(--transition-base);
+    }
+
+    .loading-spinner-container.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1000;
+        background: rgba(var(--color-background-rgb), 0.8);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+    }
+
+    .loading-spinner-container.visible {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .loading-spinner-container.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(var(--color-surface-rgb), 0.8);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        border-radius: var(--radius-lg);
+    }
+
+    .loading-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-md);
+        z-index: 1;
+        text-align: center;
+        padding: var(--spacing-lg);
+    }
+
+    /* Spinner Styles */
+    .spinner {
+        position: relative;
+    }
+
+    .spinner.small {
+        width: 30px;
+        height: 30px;
+    }
+
+    .spinner.medium {
+        width: 50px;
+        height: 50px;
+    }
+
+    .spinner.large {
+        width: 80px;
+        height: 80px;
+    }
+
+    .spinner-ring {
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
+
+    .spinner-ring div {
+        position: absolute;
+        border: 3px solid transparent;
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1.2s linear infinite;
+    }
+
+    .spinner-ring div:nth-child(1) {
+        width: 100%;
+        height: 100%;
+        border-width: 3px;
+    }
+
+    .spinner-ring div:nth-child(2) {
+        width: 85%;
+        height: 85%;
+        top: 7.5%;
+        left: 7.5%;
+        border-width: 2px;
+        border-top-color: var(--color-secondary);
+        animation-duration: 1.8s;
+        animation-direction: reverse;
+    }
+
+    .spinner-ring div:nth-child(3) {
+        width: 70%;
+        height: 70%;
+        top: 15%;
+        left: 15%;
+        border-width: 2px;
+        border-top-color: var(--color-accent);
+        animation-duration: 2.4s;
+    }
+
+    .spinner-ring div:nth-child(4) {
+        width: 55%;
+        height: 55%;
+        top: 22.5%;
+        left: 22.5%;
+        border-width: 1px;
+        border-top-color: var(--color-primary);
+        animation-duration: 3s;
+        animation-direction: reverse;
+    }
+
+    /* Dots Loader */
+    .dots-loader {
+        display: flex;
+        gap: var(--spacing-xs);
+    }
+
+    .dots-loader.small .dot {
+        width: 6px;
+        height: 6px;
+    }
+
+    .dots-loader.medium .dot {
+        width: 10px;
+        height: 10px;
+    }
+
+    .dots-loader.large .dot {
+        width: 16px;
+        height: 16px;
+    }
+
+    .dot {
+        background: var(--color-primary);
+        border-radius: 50%;
+        animation: dotBounce 1.4s ease-in-out infinite both;
+    }
+
+    .dot:nth-child(1) { animation-delay: -0.32s; }
+    .dot:nth-child(2) { animation-delay: -0.16s; }
+    .dot:nth-child(3) { animation-delay: 0s; }
+
+    /* Pulse Loader */
+    .pulse-loader {
+        display: flex;
+        gap: var(--spacing-xs);
+    }
+
+    .pulse-loader.small .pulse-circle {
+        width: 8px;
+        height: 8px;
+    }
+
+    .pulse-loader.medium .pulse-circle {
+        width: 12px;
+        height: 12px;
+    }
+
+    .pulse-loader.large .pulse-circle {
+        width: 20px;
+        height: 20px;
+    }
+
+    .pulse-circle {
+        background: var(--color-primary);
+        border-radius: 50%;
+        animation: pulseScale 1.5s ease-in-out infinite;
+    }
+
+    .pulse-circle:nth-child(1) { animation-delay: 0s; }
+    .pulse-circle:nth-child(2) { animation-delay: 0.5s; }
+    .pulse-circle:nth-child(3) { animation-delay: 1s; }
+
+    /* Loading Message */
+    .loading-message {
+        font-size: var(--font-size-md);
+        color: var(--color-text-primary);
+        font-weight: var(--font-weight-medium);
+        margin-top: var(--spacing-sm);
+    }
+
+    /* Progress Bar */
+    .loading-progress {
+        width: 200px;
+        margin-top: var(--spacing-md);
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(var(--color-border-rgb), 0.3);
+        border-radius: var(--radius-full);
+        overflow: hidden;
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+        border-radius: var(--radius-full);
+        transition: width var(--transition-base);
+        animation: shimmer 2s infinite;
+        background-size: 200% 100%;
+    }
+
+    .progress-text {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        text-align: center;
+        font-family: monospace;
+    }
+
+    /* Animations */
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @@keyframes dotBounce {
+        0%, 80%, 100% {
+            transform: scale(0.8);
+            opacity: 0.5;
+        }
+        40% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes pulseScale {
+        0%, 100% {
+            transform: scale(0.8);
+            opacity: 0.4;
+        }
+        50% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .loading-content {
+            padding: var(--spacing-md);
+        }
+
+        .loading-progress {
+            width: 150px;
+        }
+
+        .loading-message {
+            font-size: var(--font-size-sm);
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; } = true;
+    [Parameter] public bool FullScreen { get; set; } = false;
+    [Parameter] public bool ShowOverlay { get; set; } = false;
+    [Parameter] public bool ShowProgress { get; set; } = false;
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public LoadingType Type { get; set; } = LoadingType.Spinner;
+    [Parameter] public LoadingSize Size { get; set; } = LoadingSize.Medium;
+    [Parameter] public int? Progress { get; set; }
+
+    public enum LoadingType
+    {
+        Spinner,
+        Dots,
+        Pulse
+    }
+
+    public enum LoadingSize
+    {
+        Small,
+        Medium,
+        Large
+    }
+}

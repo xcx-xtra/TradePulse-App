@@ -1,0 +1,1060 @@
+@page "/dashboard"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
+@using TradePulse.Server.Models
+@inject NavigationManager Navigation
+@inject ILogger<Dashboard> Logger
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>TradePulse - Market Dashboard</PageTitle>
+
+@if (isLoading)
+{
+    <div class="dashboard-loading" role="status" aria-live="polite">
+        <div class="loading-container">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <h2>Loading TradePulse Dashboard</h2>
+            <p>Connecting to real-time market data...</p>
+            <span class="sr-only">Loading dashboard, please wait...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="dashboard @(isConnected ? "connected" : "disconnected")">
+        <!-- Dashboard Header with Connection Status -->
+        <header class="dashboard-header" role="banner">
+            <div class="header-content">
+                <div class="title-section">
+                    <h1 class="dashboard-title">TradePulse Dashboard</h1>
+                    <p class="dashboard-subtitle">Real-time market monitoring and analytics</p>
+                </div>
+                
+                <div class="header-controls">
+                    <ConnectionStatus @ref="connectionStatus" OnConnectionStateChanged="OnConnectionStateChanged" />
+                    
+                    <div class="dashboard-actions" role="toolbar" aria-label="Dashboard controls">
+                        <button class="action-btn" @onclick="RefreshData" disabled="@(!isConnected)"
+                                aria-label="Refresh market data" 
+                                title="Refresh market data">
+                            <span class="btn-icon" aria-hidden="true">🔄</span>
+                            Refresh
+                        </button>
+                        
+                        <button class="action-btn" @onclick="ToggleAutoRefresh"
+                                aria-label="@(autoRefresh ? "Pause auto-refresh" : "Start auto-refresh")"
+                                aria-pressed="@autoRefresh.ToString().ToLower()"
+                                title="@(autoRefresh ? "Pause auto-refresh" : "Start auto-refresh")">
+                            <span class="btn-icon" aria-hidden="true">@(autoRefresh ? "⏸" : "▶")</span>
+                            @(autoRefresh ? "Pause" : "Start")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Error Boundary -->
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="error-boundary" role="alert" aria-live="assertive">
+                <div class="error-content">
+                    <span class="error-icon" aria-hidden="true">⚠️</span>
+                    <span class="error-text">@errorMessage</span>
+                    <button class="error-dismiss" @onclick="DismissError" 
+                            aria-label="Dismiss error message"
+                            title="Dismiss error message">✕</button>
+                </div>
+            </div>
+        }
+
+        <!-- Performance Monitor -->
+        @if (showPerformanceMonitor)
+        {
+            <section class="performance-monitor" role="status" aria-labelledby="performance-heading" aria-live="polite">
+                <h2 id="performance-heading" class="sr-only">Performance Monitor</h2>
+                <div class="monitor-item">
+                    <span class="monitor-label">Memory:</span>
+                    <span class="monitor-value" aria-label="Memory usage: @memoryUsage megabytes">@memoryUsage MB</span>
+                </div>
+                <div class="monitor-item">
+                    <span class="monitor-label">Updates/sec:</span>
+                    <span class="monitor-value" aria-label="Updates per second: @updatesPerSecond">@updatesPerSecond</span>
+                </div>
+                <div class="monitor-item">
+                    <span class="monitor-label">Latency:</span>
+                    <span class="monitor-value" aria-label="Latency: @latency milliseconds">@latency ms</span>
+                </div>
+            </section>
+        }
+
+        <!-- Main Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Market Summary Cards -->
+            <section class="dashboard-section summary-section" aria-labelledby="summary-heading">
+                <h2 id="summary-heading" class="sr-only">Market Summary Cards</h2>
+                <MarketSummaryCards @ref="summaryCards" />
+            </section>
+
+            <!-- Main Content Grid -->
+            <div class="dashboard-section content-grid">
+                <!-- Live Market Chart -->
+                <section class="dashboard-card chart-card" aria-labelledby="chart-heading">
+                    <div class="card-header">
+                        <h3 id="chart-heading" class="card-title">Market Chart</h3>
+                        <div class="card-controls">
+                            <select class="time-selector" @bind="selectedTimeframe" @oninput="OnTimeframeChanged"
+                                    aria-label="Select chart timeframe">
+                                <option value="1m">1 Minute</option>
+                                <option value="5m">5 Minutes</option>
+                                <option value="15m">15 Minutes</option>
+                                <option value="1h">1 Hour</option>
+                                <option value="1d">1 Day</option>
+                            </select>
+                        </div>
+                    </div>
+                    <LiveMarketChart @ref="marketChart" />
+                </section>
+
+                <!-- Market Events List -->
+                <section class="dashboard-card events-card" aria-labelledby="events-heading">
+                    <h3 id="events-heading" class="sr-only">Market Events List</h3>
+                    <MarketEventsList @ref="eventsList" />
+                </section>
+            </div>
+
+            <!-- Additional Analytics Section -->
+            <section class="dashboard-section analytics-section" aria-labelledby="analytics-heading">
+                <h2 id="analytics-heading" class="sr-only">Analytics and System Health</h2>
+                <div class="analytics-grid">
+                    <div class="analytics-card" role="region" aria-labelledby="market-overview-heading">
+                        <h4 id="market-overview-heading">Market Overview</h4>
+                        <div class="market-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Volume</span>
+                                <span class="stat-value">@totalVolume.ToString("C0")</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Active Symbols</span>
+                                <span class="stat-value">@activeSymbols</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Market Trend</span>
+                                <span class="stat-value trend-@marketTrend.ToLower()">@marketTrend</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-card">
+                        <h4>System Health</h4>
+                        <div class="health-indicators">
+                            <div class="health-item @GetHealthStatus("connection")">
+                                <span class="health-icon">🔗</span>
+                                <span class="health-label">Connection</span>
+                            </div>
+                            <div class="health-item @GetHealthStatus("data")">
+                                <span class="health-icon">📊</span>
+                                <span class="health-label">Data Flow</span>
+                            </div>
+                            <div class="health-item @GetHealthStatus("performance")">
+                                <span class="health-icon">⚡</span>
+                                <span class="health-label">Performance</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+}
+
+<style>
+    .dashboard-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: var(--color-background);
+    }
+
+    .loading-container {
+        text-align: center;
+        padding: var(--spacing-xl);
+    }
+
+    .loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(var(--color-primary-rgb), 0.3);
+        border-top: 4px solid var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto var(--spacing-lg);
+    }
+
+    .dashboard {
+        min-height: 100vh;
+        background: var(--color-background);
+        transition: all var(--transition-base);
+        position: relative;
+    }
+
+    .dashboard.connected {
+        border-left: 4px solid var(--color-success);
+    }
+
+    .dashboard.disconnected {
+        border-left: 4px solid var(--color-danger);
+    }
+
+    .dashboard-header {
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border-bottom: 1px solid var(--glass-border);
+        padding: var(--spacing-lg) var(--spacing-xl);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+    }
+
+    .title-section {
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .dashboard-title {
+        font-size: var(--font-size-3xl);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-primary);
+        margin: 0 0 var(--spacing-xs);
+        background: linear-gradient(45deg, var(--color-primary), var(--color-secondary));
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .dashboard-subtitle {
+        font-size: var(--font-size-md);
+        color: var(--color-text-secondary);
+        margin: 0;
+    }
+
+    .header-controls {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-lg);
+    }
+
+    .dashboard-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: rgba(var(--color-primary-rgb), 0.1);
+        border: 1px solid rgba(var(--color-primary-rgb), 0.3);
+        border-radius: var(--radius-md);
+        color: var(--color-primary);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        font-size: var(--font-size-sm);
+    }
+
+    .action-btn:hover:not(:disabled) {
+        background: rgba(var(--color-primary-rgb), 0.2);
+        transform: translateY(-2px);
+    }
+
+    .action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-icon {
+        font-size: 1rem;
+    }
+
+    .error-boundary {
+        background: rgba(var(--color-danger-rgb), 0.1);
+        border: 1px solid rgba(var(--color-danger-rgb), 0.3);
+        border-radius: var(--radius-md);
+        margin: var(--spacing-lg) var(--spacing-xl);
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .error-content {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md);
+    }
+
+    .error-icon {
+        font-size: 1.2rem;
+    }
+
+    .error-text {
+        flex: 1;
+        color: var(--color-danger);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .error-dismiss {
+        background: none;
+        border: none;
+        color: var(--color-danger);
+        cursor: pointer;
+        padding: var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        transition: background var(--transition-base);
+    }
+
+    .error-dismiss:hover {
+        background: rgba(var(--color-danger-rgb), 0.2);
+    }
+
+    .performance-monitor {
+        display: flex;
+        gap: var(--spacing-lg);
+        padding: var(--spacing-md) var(--spacing-xl);
+        background: rgba(var(--color-info-rgb), 0.05);
+        border-bottom: 1px solid rgba(var(--color-info-rgb), 0.2);
+        font-size: var(--font-size-sm);
+    }
+
+    .monitor-item {
+        display: flex;
+        gap: var(--spacing-xs);
+    }
+
+    .monitor-label {
+        color: var(--color-text-secondary);
+    }
+
+    .monitor-value {
+        color: var(--color-info);
+        font-weight: var(--font-weight-medium);
+        font-family: monospace;
+    }
+
+    .dashboard-content {
+        padding: var(--spacing-xl);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xl);
+    }
+
+    .summary-section {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: var(--spacing-xl);
+        animation: fadeInUp 0.6s ease-out 0.2s both;
+    }
+
+    .dashboard-card {
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all var(--transition-base);
+    }
+
+    .dashboard-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-lg);
+        border-bottom: 1px solid var(--color-border);
+        background: rgba(var(--color-surface-rgb), 0.5);
+    }
+
+    .card-title {
+        margin: 0;
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+    }
+
+    .time-selector {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-sm);
+    }
+
+    .analytics-section {
+        animation: fadeInUp 0.6s ease-out 0.4s both;
+    }
+
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--spacing-lg);
+    }
+
+    .analytics-card {
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+        transition: all var(--transition-base);
+    }
+
+    .analytics-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .analytics-card h4 {
+        margin: 0 0 var(--spacing-md);
+        font-size: var(--font-size-lg);
+        color: var(--color-text-primary);
+    }
+
+    .market-stats,
+    .health-indicators {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid rgba(var(--color-border-rgb), 0.3);
+    }
+
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+
+    .stat-label {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+    }
+
+    .stat-value {
+        color: var(--color-text-primary);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .stat-value.trend-bullish {
+        color: var(--color-success);
+    }
+
+    .stat-value.trend-bearish {
+        color: var(--color-danger);
+    }
+
+    .stat-value.trend-neutral {
+        color: var(--color-text-secondary);
+    }
+
+    .health-item {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+    }
+
+    .health-item.healthy {
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
+    }
+
+    .health-item.warning {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+    }
+
+    .health-item.error {
+        background: rgba(var(--color-danger-rgb), 0.1);
+        color: var(--color-danger);
+    }
+
+    .health-icon {
+        font-size: 1.2rem;
+    }
+
+    .health-label {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+    }
+
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    @@keyframes slideIn {
+        from { 
+            opacity: 0; 
+            transform: translateY(-20px); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Enhanced Responsive Design */
+    
+    /* Large screens - optimize for desktop */
+    @@media (min-width: 1200px) {
+        .dashboard-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .content-grid {
+            grid-template-columns: 2fr 1fr;
+            gap: var(--spacing-2xl);
+        }
+        
+        .analytics-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Medium-large screens - tablet landscape */
+    @@media (max-width: 1199px) and (min-width: 992px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-xl);
+        }
+        
+        .chart-card {
+            order: 1;
+        }
+        
+        .events-card {
+            order: 2;
+            max-height: 400px;
+        }
+        
+        .analytics-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Tablet portrait */
+    @@media (max-width: 991px) and (min-width: 769px) {
+        .dashboard-content {
+            padding: var(--spacing-lg);
+        }
+        
+        .content-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-lg);
+        }
+        
+        .dashboard-header {
+            padding: var(--spacing-md) var(--spacing-lg);
+        }
+        
+        .header-content {
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--spacing-lg);
+        }
+        
+        .title-section {
+            text-align: center;
+            min-width: auto;
+        }
+        
+        .dashboard-title {
+            font-size: var(--font-size-2xl);
+        }
+        
+        .header-controls {
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .analytics-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .performance-monitor {
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    }
+
+    /* Mobile devices */
+    @@media (max-width: 768px) {
+        .dashboard-content {
+            padding: var(--spacing-md);
+        }
+
+        .dashboard-header {
+            padding: var(--spacing-sm) var(--spacing-md);
+        }
+
+        .header-content {
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--spacing-md);
+        }
+        
+        .title-section {
+            text-align: center;
+            min-width: auto;
+        }
+
+        .dashboard-title {
+            font-size: var(--font-size-xl);
+            line-height: var(--line-height-tight);
+        }
+        
+        .dashboard-subtitle {
+            font-size: var(--font-size-sm);
+        }
+
+        .header-controls {
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .dashboard-actions {
+            width: 100%;
+            justify-content: space-around;
+            gap: var(--spacing-sm);
+        }
+        
+        .action-btn {
+            flex: 1;
+            justify-content: center;
+            padding: var(--spacing-md);
+            min-height: 44px; /* Touch-friendly */
+            font-size: var(--font-size-sm);
+        }
+
+        .performance-monitor {
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+        }
+        
+        .monitor-item {
+            justify-content: space-between;
+            padding: var(--spacing-xs) 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .monitor-item:last-child {
+            border-bottom: none;
+        }
+
+        .analytics-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-md);
+        }
+        
+        .analytics-card {
+            padding: var(--spacing-md);
+        }
+        
+        .content-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-md);
+        }
+        
+        .chart-card .card-header {
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            align-items: stretch;
+        }
+        
+        .time-selector {
+            width: 100%;
+            padding: var(--spacing-sm);
+            font-size: var(--font-size-base);
+        }
+        
+        /* Mobile-optimized error boundary */
+        .error-boundary {
+            margin: var(--spacing-md);
+        }
+        
+        .error-content {
+            flex-direction: column;
+            text-align: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .error-dismiss {
+            align-self: center;
+            padding: var(--spacing-sm);
+            min-height: 44px;
+            min-width: 44px;
+        }
+    }
+
+    /* Small mobile devices */
+    @@media (max-width: 480px) {
+        .dashboard-content {
+            padding: var(--spacing-sm);
+        }
+        
+        .dashboard-header {
+            padding: var(--spacing-xs) var(--spacing-sm);
+        }
+        
+        .dashboard-title {
+            font-size: var(--font-size-lg);
+        }
+        
+        .dashboard-actions {
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+        
+        .action-btn {
+            width: 100%;
+            padding: var(--spacing-sm);
+        }
+        
+        .performance-monitor {
+            display: none; /* Hide on very small screens */
+        }
+        
+        .analytics-card h4 {
+            font-size: var(--font-size-base);
+        }
+        
+        .stat-item {
+            padding: var(--spacing-xs) 0;
+        }
+        
+        .stat-label {
+            font-size: var(--font-size-xs);
+        }
+        
+        .stat-value {
+            font-size: var(--font-size-sm);
+        }
+    }
+
+    /* Landscape orientation adjustments */
+    @@media (max-height: 500px) and (orientation: landscape) {
+        .dashboard-header {
+            position: relative; /* Remove sticky on landscape mobile */
+        }
+        
+        .dashboard-content {
+            padding: var(--spacing-sm);
+        }
+        
+        .performance-monitor {
+            display: none;
+        }
+    }
+</style>
+
+@code {
+    private ConnectionStatus? connectionStatus;
+    private MarketSummaryCards? summaryCards;
+    private LiveMarketChart? marketChart;
+    private MarketEventsList? eventsList;
+    
+    private bool isLoading = true;
+    private bool isConnected = false;
+    private bool autoRefresh = true;
+    private string errorMessage = string.Empty;
+    private bool showPerformanceMonitor = false;
+    
+    // Performance monitoring
+    private double memoryUsage = 0;
+    private int updatesPerSecond = 0;
+    private int latency = 0;
+    private Timer? performanceTimer;
+    
+    // Analytics data
+    private string selectedTimeframe = "5m";
+    private decimal totalVolume = 0;
+    private int activeSymbols = 0;
+    private string marketTrend = "Neutral";
+    
+    private HubConnection? hubConnection;
+    private bool isDisposed = false;
+    private bool isUpdating = false;
+    private readonly SemaphoreSlim updateSemaphore = new(1, 1);
+    private DateTime lastUpdate = DateTime.Now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await InitializePerformanceMonitoring();
+            await InitializeHubConnection();
+            await SimulateDataLoading();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize dashboard");
+            errorMessage = "Failed to initialize dashboard components";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task InitializeHubConnection()
+    {
+        try
+        {
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/markethub"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            hubConnection.On<MarketEvent>("ReceiveMarketEvent", async marketEvent =>
+            {
+                if (isDisposed) return;
+                
+                // Throttle updates to prevent UI flooding
+                if (!await updateSemaphore.WaitAsync(100)) return;
+                
+                try
+                {
+                    await InvokeAsync(() =>
+                    {
+                        updatesPerSecond++;
+                        UpdateAnalytics(marketEvent);
+                        
+                        // Only update UI if enough time has passed (throttling)
+                        var now = DateTime.Now;
+                        if ((now - lastUpdate).TotalMilliseconds > 100) // Max 10 updates per second
+                        {
+                            StateHasChanged();
+                            lastUpdate = now;
+                        }
+                    });
+                }
+                finally
+                {
+                    updateSemaphore.Release();
+                }
+            });
+
+            await hubConnection.StartAsync();
+            Logger.LogInformation("Dashboard hub connection established");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize hub connection");
+            throw;
+        }
+    }
+
+    private async Task InitializePerformanceMonitoring()
+    {
+        showPerformanceMonitor = true;
+        
+        performanceTimer = new Timer(async _ =>
+        {
+            if (isDisposed) return;
+            
+            await InvokeAsync(() =>
+            {
+                // Simulate performance metrics
+                var gc = GC.GetTotalMemory(false);
+                memoryUsage = Math.Round(gc / 1024.0 / 1024.0, 1);
+                
+                // Calculate latency (simulate)
+                latency = new Random().Next(10, 100);
+                
+                // Reset updates counter
+                updatesPerSecond = 0;
+                
+                StateHasChanged();
+            });
+            
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+    }
+
+    private async Task SimulateDataLoading()
+    {
+        // Simulate loading delay
+        await Task.Delay(2000);
+        
+        // Initialize analytics data
+        var random = new Random();
+        totalVolume = random.Next(1000000, 10000000);
+        activeSymbols = random.Next(50, 200);
+        marketTrend = random.NextDouble() > 0.5 ? "Bullish" : random.NextDouble() > 0.5 ? "Bearish" : "Neutral";
+    }
+
+    private void UpdateAnalytics(MarketEvent marketEvent)
+    {
+        if (marketEvent.Volume.HasValue)
+        {
+            totalVolume += marketEvent.Volume.Value;
+        }
+        
+        // Update market trend based on price movements
+        var random = new Random();
+        if (random.NextDouble() > 0.8) // Occasionally update trend
+        {
+            marketTrend = random.NextDouble() > 0.5 ? "Bullish" : random.NextDouble() > 0.5 ? "Bearish" : "Neutral";
+        }
+    }
+
+    private async Task OnConnectionStateChanged(HubConnectionState state)
+    {
+        isConnected = state == HubConnectionState.Connected;
+        
+        if (!isConnected && state == HubConnectionState.Disconnected)
+        {
+            errorMessage = "Connection to market data lost. Attempting to reconnect...";
+        }
+        else if (isConnected)
+        {
+            errorMessage = string.Empty;
+        }
+        
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RefreshData()
+    {
+        if (!isConnected) return;
+        
+        try
+        {
+            Logger.LogInformation("Manual data refresh initiated");
+            
+            // Refresh all components
+            if (summaryCards != null)
+            {
+                // Trigger refresh on summary cards
+                StateHasChanged();
+            }
+            
+            if (marketChart != null)
+            {
+                // Trigger chart refresh
+                StateHasChanged();
+            }
+            
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to refresh data");
+            errorMessage = "Failed to refresh data. Please try again.";
+        }
+    }
+
+    private void ToggleAutoRefresh()
+    {
+        autoRefresh = !autoRefresh;
+        Logger.LogInformation($"Auto-refresh {(autoRefresh ? "enabled" : "disabled")}");
+    }
+
+    private async Task OnTimeframeChanged(ChangeEventArgs e)
+    {
+        selectedTimeframe = e.Value?.ToString() ?? "5m";
+        Logger.LogInformation($"Timeframe changed to: {selectedTimeframe}");
+        
+        // Here you would typically update the chart timeframe
+        StateHasChanged();
+    }
+
+    private void DismissError()
+    {
+        errorMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    private string GetHealthStatus(string component)
+    {
+        return component switch
+        {
+            "connection" => isConnected ? "healthy" : "error",
+            "data" => updatesPerSecond > 0 ? "healthy" : "warning",
+            "performance" => memoryUsage < 100 && latency < 200 ? "healthy" : memoryUsage > 200 ? "error" : "warning",
+            _ => "warning"
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (isDisposed) return;
+        isDisposed = true;
+
+        // Proper cleanup to prevent memory leaks
+        performanceTimer?.Dispose();
+        updateSemaphore?.Dispose();
+        
+        if (hubConnection != null)
+        {
+            try
+            {
+                await hubConnection.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error stopping SignalR connection during disposal");
+            }
+            finally
+            {
+                await hubConnection.DisposeAsync();
+            }
+        }
+        
+        // Clear references to help GC
+        hubConnection = null;
+        connectionStatus = null;
+        summaryCards = null;
+        marketChart = null;
+        eventsList = null;
+    }
+}

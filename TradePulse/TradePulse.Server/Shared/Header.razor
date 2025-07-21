@@ -1,0 +1,644 @@
+@*
+    Modern Header Component
+    - Glassmorphism backdrop blur effect
+    - Gradient branding
+    - Animated connection indicator
+    - Theme toggle functionality
+    - Mobile-responsive navigation
+*@
+@inject IJSRuntime JSRuntime
+
+<header class="main-header glass">
+    <div class="header-content">
+        <div class="branding">
+            <div class="logo-container">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 12L5 14L8 11M3 7L5 9L8 6M3 17L5 19L8 16M13 17H21M13 12H21M13 7H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="brand-text">
+                <h1 class="brand-name gradient-text" role="banner">TradePulse</h1>
+                <span class="brand-tagline desktop-only" aria-label="Application description">Real-time Market Analytics</span>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <div class="connection-wrapper desktop-only">
+                <ConnectionStatus />
+            </div>
+            
+            <div class="current-time desktop-only">
+                <span class="time-label">Market Time</span>
+                <span class="time-value">@currentTime</span>
+            </div>
+            
+            <button @onclick="ToggleTheme" class="theme-toggle-btn touch-target" aria-label="Toggle theme">
+                <span class="icon">@(isDarkMode ? "☀️" : "🌙")</span>
+                <span class="sr-only">@(isDarkMode ? "Switch to light mode" : "Switch to dark mode")</span>
+            </button>
+            
+            <button @onclick="ToggleMobileMenu" class="mobile-menu-btn mobile-only touch-target" aria-label="Toggle menu">
+                <span class="hamburger-line @(isMobileMenuOpen ? "open" : "")"></span>
+                <span class="hamburger-line @(isMobileMenuOpen ? "open" : "")"></span>
+                <span class="hamburger-line @(isMobileMenuOpen ? "open" : "")"></span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Mobile menu overlay -->
+    @if (isMobileMenuOpen)
+    {
+        <div class="mobile-menu-overlay" @onclick="CloseMobileMenu">
+            <div class="mobile-menu-content" @onclick:stopPropagation="true">
+                <div class="mobile-menu-header">
+                    <h3>Menu</h3>
+                    <button @onclick="CloseMobileMenu" class="close-btn" aria-label="Close menu">✕</button>
+                </div>
+                
+                <div class="mobile-menu-body">
+                    <div class="mobile-connection-status">
+                        <ConnectionStatus />
+                    </div>
+                    
+                    <div class="mobile-time">
+                        <span class="time-label">Market Time</span>
+                        <span class="time-value">@currentTime</span>
+                    </div>
+                    
+                    <nav class="mobile-nav">
+                        <a href="/dashboard" class="mobile-nav-link" @onclick="CloseMobileMenu">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                        <a href="/markets" class="mobile-nav-link" @onclick="CloseMobileMenu">
+                            <span class="nav-icon">📈</span>
+                            <span class="nav-text">Markets</span>
+                        </a>
+                        <a href="/analytics" class="mobile-nav-link" @onclick="CloseMobileMenu">
+                            <span class="nav-icon">📋</span>
+                            <span class="nav-text">Analytics</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    }
+</header>
+
+<style>
+    .main-header {
+        position: sticky;
+        top: 0;
+        z-index: var(--z-sticky);
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border-bottom: 1px solid var(--glass-border);
+        box-shadow: var(--shadow-glass);
+        transition: all var(--transition-normal);
+    }
+
+    .header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: var(--spacing-md) var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-md);
+    }
+
+    .branding {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        flex: 1;
+        min-width: 0;
+    }
+
+    .logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+        border-radius: var(--radius-lg);
+        color: white;
+        box-shadow: var(--shadow-md);
+        transition: all var(--transition-fast);
+    }
+
+    .logo-container:hover {
+        transform: scale(1.05) rotate(5deg);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .logo-icon {
+        width: 24px;
+        height: 24px;
+    }
+
+    .brand-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .brand-name {
+        margin: 0;
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-bold);
+        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        white-space: nowrap;
+    }
+
+    .brand-tagline {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        font-weight: var(--font-weight-medium);
+        white-space: nowrap;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-lg);
+        flex-shrink: 0;
+    }
+
+    .current-time {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+    }
+
+    .time-label {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .time-value {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        font-weight: var(--font-weight-semibold);
+        font-family: var(--font-family-mono);
+    }
+
+    .theme-toggle-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        font-size: 1.2rem;
+    }
+
+    .theme-toggle-btn:hover {
+        color: var(--color-primary);
+        border-color: var(--color-primary);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .mobile-menu-btn {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 44px;
+        height: 44px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: var(--spacing-sm);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+    }
+
+    .mobile-menu-btn:hover {
+        background: var(--color-surface-hover);
+    }
+
+    .hamburger-line {
+        width: 24px;
+        height: 2px;
+        background: var(--color-text-primary);
+        margin: 2px 0;
+        transition: all var(--transition-fast);
+        border-radius: 1px;
+        transform-origin: center;
+    }
+
+    .hamburger-line.open:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+
+    .hamburger-line.open:nth-child(2) {
+        opacity: 0;
+    }
+
+    .hamburger-line.open:nth-child(3) {
+        transform: rotate(-45deg) translate(7px, -6px);
+    }
+
+    .mobile-menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: var(--z-modal);
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding-top: 80px;
+        animation: fadeIn var(--transition-normal);
+    }
+
+    .mobile-menu-content {
+        width: 280px;
+        max-height: calc(100vh - 100px);
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        margin: var(--spacing-md);
+        overflow: hidden;
+        animation: slideInRight var(--transition-normal);
+    }
+
+    .mobile-menu-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-md);
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .mobile-menu-header h3 {
+        margin: 0;
+        font-size: var(--font-size-lg);
+        color: var(--color-text-primary);
+    }
+
+    .close-btn {
+        width: 32px;
+        height: 32px;
+        background: none;
+        border: none;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-fast);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .close-btn:hover {
+        background: var(--color-surface-hover);
+        color: var(--color-text-primary);
+    }
+
+    .mobile-menu-body {
+        padding: var(--spacing-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-lg);
+    }
+
+    .mobile-connection-status,
+    .mobile-time {
+        padding: var(--spacing-sm);
+        background: rgba(var(--color-surface-rgb), 0.5);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-border);
+    }
+
+    .mobile-time {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .mobile-nav {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .mobile-nav-link {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md);
+        text-decoration: none;
+        color: var(--color-text-secondary);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-fast);
+        min-height: 48px;
+    }
+
+    .mobile-nav-link:hover {
+        color: var(--color-primary);
+        background: rgba(var(--color-primary-rgb), 0.1);
+    }
+
+    .nav-icon {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .nav-text {
+        font-weight: var(--font-weight-medium);
+    }
+
+    .touch-target {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    /* Responsive Design */
+    
+    /* Large screens */
+    @@media (min-width: 1200px) {
+        .header-content {
+            padding: var(--spacing-lg) var(--spacing-xl);
+        }
+        
+        .brand-name {
+            font-size: var(--font-size-2xl);
+        }
+        
+        .logo-container {
+            width: 56px;
+            height: 56px;
+        }
+        
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+        }
+        
+        .header-actions {
+            gap: var(--spacing-xl);
+        }
+    }
+
+    /* Medium screens - tablets */
+    @@media (max-width: 1199px) and (min-width: 769px) {
+        .header-content {
+            padding: var(--spacing-md) var(--spacing-lg);
+        }
+        
+        .brand-name {
+            font-size: var(--font-size-xl);
+        }
+        
+        .header-actions {
+            gap: var(--spacing-lg);
+        }
+    }
+
+    /* Mobile devices */
+    @@media (max-width: 768px) {
+        .header-content {
+            padding: var(--spacing-sm) var(--spacing-md);
+            gap: var(--spacing-sm);
+        }
+
+        .branding {
+            gap: var(--spacing-sm);
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .brand-name {
+            font-size: var(--font-size-lg);
+        }
+
+        .brand-tagline {
+            display: none;
+        }
+        
+        .logo-container {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .logo-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .header-actions {
+            gap: var(--spacing-sm);
+            flex-shrink: 0;
+        }
+        
+        .desktop-only {
+            display: none !important;
+        }
+        
+        .mobile-only {
+            display: flex !important;
+        }
+    }
+
+    /* Small mobile devices */
+    @@media (max-width: 480px) {
+        .header-content {
+            padding: var(--spacing-xs) var(--spacing-sm);
+        }
+        
+        .branding {
+            min-width: auto;
+        }
+        
+        .brand-name {
+            font-size: var(--font-size-base);
+        }
+        
+        .logo-container {
+            width: 36px;
+            height: 36px;
+        }
+        
+        .logo-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        .header-actions {
+            gap: var(--spacing-xs);
+        }
+        
+        .theme-toggle-btn {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .mobile-menu-content {
+            width: calc(100vw - var(--spacing-lg));
+            margin: var(--spacing-sm);
+        }
+    }
+    
+    /* Landscape mobile optimization */
+    @@media (max-height: 500px) and (orientation: landscape) {
+        .header-content {
+            padding: var(--spacing-xs) var(--spacing-sm);
+        }
+        
+        .logo-container {
+            width: 32px;
+            height: 32px;
+        }
+        
+        .logo-icon {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .brand-name {
+            font-size: var(--font-size-sm);
+        }
+        
+        .mobile-menu-overlay {
+            padding-top: 60px;
+        }
+        
+        .mobile-menu-content {
+            max-height: calc(100vh - 80px);
+        }
+    }
+
+    /* Default mobile-only and desktop-only visibility */
+    .mobile-only {
+        display: none;
+    }
+
+    .desktop-only {
+        display: block;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @@keyframes slideInRight {
+        from { 
+            opacity: 0;
+            transform: translateX(100%); 
+        }
+        to { 
+            opacity: 1;
+            transform: translateX(0); 
+        }
+    }
+</style>
+
+@code {
+    private bool isDarkMode = true;
+    private bool isMobileMenuOpen = false;
+    private string currentTime = "";
+    private Timer? timeTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize time display
+        UpdateCurrentTime();
+        
+        // Start timer for time updates
+        timeTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(() =>
+            {
+                UpdateCurrentTime();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var currentTheme = await JSRuntime.InvokeAsync<string>("getTheme");
+                isDarkMode = currentTheme == "dark";
+                StateHasChanged();
+            }
+            catch
+            {
+                // Fallback if JS not available
+                isDarkMode = true;
+            }
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkMode = !isDarkMode;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("setTheme", isDarkMode ? "dark" : "light");
+        }
+        catch
+        {
+            // Fallback if JS not available
+        }
+    }
+
+    private void ToggleMobileMenu()
+    {
+        isMobileMenuOpen = !isMobileMenuOpen;
+        StateHasChanged();
+    }
+
+    private void CloseMobileMenu()
+    {
+        isMobileMenuOpen = false;
+        StateHasChanged();
+    }
+
+    private void UpdateCurrentTime()
+    {
+        currentTime = DateTime.Now.ToString("HH:mm:ss");
+    }
+
+    public void Dispose()
+    {
+        timeTimer?.Dispose();
+    }
+}

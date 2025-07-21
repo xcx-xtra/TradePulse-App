@@ -1,0 +1,992 @@
+@using Microsoft.AspNetCore.SignalR.Client
+@using TradePulse.Server.Models
+@using Microsoft.JSInterop
+@inject NavigationManager Navigation
+@inject ILogger<MarketEventsList> Logger
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div class="events-list-container">
+    <div class="events-header">
+        <div class="header-content">
+            <h3 class="events-title">📊 Market Events</h3>
+            <div class="events-meta">
+                <span class="events-count">@filteredEvents.Count events</span>
+                @if (isConnected)
+                {
+                    <span class="live-indicator">
+                        <span class="pulse-dot"></span>
+                        Live
+                    </span>
+                }
+            </div>
+        </div>
+        
+        <div class="search-controls" role="search" aria-label="Market events search and filter controls">
+            <div class="search-box">
+                <label for="events-search" class="sr-only">Search market events</label>
+                <input id="events-search"
+                       type="text" 
+                       placeholder="Search events..." 
+                       @bind="searchTerm" 
+                       @oninput="HandleSearchInput"
+                       class="search-input"
+                       aria-describedby="search-help" />
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <div id="search-help" class="sr-only">Type to search through market events by symbol or content</div>
+            </div>
+            
+            <div class="filter-dropdown">
+                <label for="events-filter" class="sr-only">Filter market events</label>
+                <select id="events-filter" 
+                        @bind="selectedFilter" 
+                        @bind:after="HandleFilterChange"
+                        class="filter-select"
+                        aria-label="Filter events by type">
+                    <option value="all">All Events</option>
+                    <option value="price">Price Changes</option>
+                    <option value="volume">Volume Updates</option>
+                    <option value="recent">Last 5 min</option>
+                </select>
+            </div>
+            
+            <button class="clear-btn" 
+                    @onclick="ClearEvents" 
+                    aria-label="Clear all events"
+                    title="Clear all events">
+                <span aria-hidden="true">🗑️</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="events-list" 
+         @ref="eventsContainer" 
+         @onscroll="OnScroll"
+         role="log"
+         aria-live="polite"
+         aria-label="Market events list"
+         tabindex="0">
+        @if (isLoading)
+        {
+            <div class="loading-container">
+                @for (int i = 0; i < 5; i++)
+                {
+                    <div class="event-skeleton">
+                        <div class="skeleton-content">
+                            <div class="skeleton-line skeleton-title"></div>
+                            <div class="skeleton-line skeleton-subtitle"></div>
+                            <div class="skeleton-line skeleton-value"></div>
+                        </div>
+                        <div class="skeleton-time"></div>
+                    </div>
+                }
+            </div>
+        }
+        else if (!filteredEvents.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <h4>No events found</h4>
+                <p>@GetEmptyStateMessage()</p>
+            </div>
+        }
+        else
+        {
+                    <div class="events-list-virtualized" style="height: @containerHeight; overflow-y: auto;" @ref="eventsContainer" @onscroll="OnScroll">
+                <!-- Virtualized content with spacers -->
+                <div style="height: @(topSpacerHeight)px;"></div>
+                
+                @foreach (var eventItem in GetVirtualizedEvents())
+                {
+                    <div class="event-item @GetEventClass(eventItem)" 
+                         @onclick="() => SelectEvent(eventItem)"
+                         @onmouseenter="() => HoverEvent(eventItem)"
+                         @onmouseleave="() => UnhoverEvent()">
+                        
+                        <div class="event-content">
+                            <div class="event-main">
+                                <div class="event-symbol">
+                                    <span class="symbol-text">@(eventItem.Symbol ?? "N/A")</span>
+                                    @if (!string.IsNullOrEmpty(eventItem.Trend))
+                                    {
+                                        <span class="trend-indicator @eventItem.Trend">
+                                            @GetTrendIcon(eventItem.Trend)
+                                        </span>
+                                    }
+                                </div>
+                                
+                                <div class="event-details">
+                                    <span class="event-price">
+                                        $@(eventItem.Price?.ToString("F2") ?? "0.00")
+                                    </span>
+                                    @if (eventItem.Volume.HasValue)
+                                    {
+                                        <span class="event-volume">
+                                            Vol: @FormatVolume(eventItem.Volume.Value)
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="event-meta">
+                                <span class="event-time">
+                                    @FormatTime(eventItem.Timestamp)
+                                </span>
+                                @if (eventItem == selectedEvent)
+                                {
+                                    <span class="selected-indicator">✓</span>
+                                }
+                            </div>
+                        </div>
+                        
+                        @if (eventItem == selectedEvent)
+                        {
+                            <div class="event-details-expanded">
+                                <div class="detail-row">
+                                    <span class="detail-label">Timestamp:</span>
+                                    <span class="detail-value">@(eventItem.Timestamp?.ToString("yyyy-MM-dd HH:mm:ss.fff") ?? "N/A")</span>
+                                </div>
+                                @if (eventItem.Volume.HasValue)
+                                {
+                                    <div class="detail-row">
+                                        <span class="detail-label">Volume:</span>
+                                        <span class="detail-value">@eventItem.Volume.Value.ToString("N0")</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(eventItem.Description))
+                                {
+                                    <div class="detail-row">
+                                        <span class="detail-label">Description:</span>
+                                        <span class="detail-value">@eventItem.Description</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                
+                <div style="height: @(bottomSpacerHeight)px;"></div>
+            </div>
+        }
+        
+        <!-- Auto-scroll controls -->
+        <div class="scroll-controls">
+            <button class="scroll-control-btn @(autoScrollEnabled ? "active" : "")" 
+                    @onclick="ToggleAutoScroll" 
+                    title="@(autoScrollEnabled ? "Disable auto-scroll" : "Enable auto-scroll")">
+                @(autoScrollEnabled ? "🔒" : "🔓") Auto-scroll
+            </button>
+            
+            @if (!autoScrollEnabled && hasNewEvents)
+            {
+                <button class="scroll-to-top-btn" @onclick="ScrollToTop" title="Scroll to latest events">
+                    ↑ @newEventsCount new
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .events-list-container {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .events-header {
+        padding: var(--spacing-lg);
+        border-bottom: 1px solid var(--color-border);
+        background: rgba(var(--color-surface-rgb), 0.8);
+    }
+
+    .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--spacing-md);
+    }
+
+    .events-title {
+        margin: 0;
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+    }
+
+    .events-meta {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+
+    .events-count {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+
+    .live-indicator {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        font-size: var(--font-size-sm);
+        color: var(--color-success);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--color-success);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+
+    .search-controls {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        flex-wrap: wrap;
+    }
+
+    .search-box {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
+        padding-right: var(--spacing-xl);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-background);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-sm);
+        transition: all var(--transition-base);
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        right: var(--spacing-sm);
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-text-secondary);
+        pointer-events: none;
+    }
+
+    .filter-dropdown .filter-select {
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-background);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-sm);
+        cursor: pointer;
+        transition: all var(--transition-base);
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--color-primary);
+    }
+
+    .clear-btn {
+        padding: var(--spacing-sm);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-background);
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+    }
+
+    .clear-btn:hover {
+        background: var(--color-danger);
+        color: white;
+        border-color: var(--color-danger);
+    }
+
+    .events-list {
+        max-height: 600px;
+        overflow-y: auto;
+        position: relative;
+    }
+
+    .loading-container, .events-virtualized {
+        padding: var(--spacing-sm);
+    }
+
+    .event-skeleton {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+        border-radius: var(--radius-md);
+        background: rgba(var(--color-surface-rgb), 0.5);
+    }
+
+    .skeleton-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .skeleton-line {
+        height: 12px;
+        background: linear-gradient(90deg, 
+            rgba(var(--color-border-rgb), 0.3) 25%, 
+            rgba(var(--color-border-rgb), 0.5) 50%, 
+            rgba(var(--color-border-rgb), 0.3) 75%);
+        background-size: 200% 100%;
+        border-radius: var(--radius-sm);
+        animation: shimmer 2s infinite;
+    }
+
+    .skeleton-title { width: 60%; }
+    .skeleton-subtitle { width: 80%; }
+    .skeleton-value { width: 40%; }
+    .skeleton-time { width: 80px; height: 12px; background: linear-gradient(90deg, rgba(var(--color-border-rgb), 0.3) 25%, rgba(var(--color-border-rgb), 0.5) 50%, rgba(var(--color-border-rgb), 0.3) 75%); background-size: 200% 100%; border-radius: var(--radius-sm); animation: shimmer 2s infinite; }
+
+    .empty-state {
+        text-align: center;
+        padding: var(--spacing-xl);
+        color: var(--color-text-secondary);
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        margin-bottom: var(--spacing-md);
+    }
+
+    .empty-state h4 {
+        margin: 0 0 var(--spacing-sm) 0;
+        color: var(--color-text-primary);
+    }
+
+    .event-item {
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-xs);
+        border-radius: var(--radius-md);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        background: rgba(var(--color-surface-rgb), 0.5);
+    }
+
+    .event-item:hover {
+        background: rgba(var(--color-surface-rgb), 0.8);
+        border-color: var(--color-border);
+        transform: translateX(4px);
+    }
+
+    .event-item.selected {
+        background: rgba(var(--color-primary-rgb), 0.1);
+        border-color: var(--color-primary);
+    }
+
+    .event-item.trending-up {
+        border-left: 3px solid var(--color-success);
+    }
+
+    .event-item.trending-down {
+        border-left: 3px solid var(--color-danger);
+    }
+
+    .event-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .event-main {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        flex: 1;
+    }
+
+    .event-symbol {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .symbol-text {
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-md);
+    }
+
+    .trend-indicator {
+        font-size: var(--font-size-sm);
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .trend-indicator.up {
+        background: rgba(var(--color-success-rgb), 0.2);
+        color: var(--color-success);
+    }
+
+    .trend-indicator.down {
+        background: rgba(var(--color-danger-rgb), 0.2);
+        color: var(--color-danger);
+    }
+
+    .event-details {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+
+    .event-price {
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+    }
+
+    .event-volume {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+
+    .event-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--spacing-xs);
+    }
+
+    .event-time {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        white-space: nowrap;
+    }
+
+    .selected-indicator {
+        color: var(--color-primary);
+        font-weight: var(--font-weight-bold);
+    }
+
+    .event-details-expanded {
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-md);
+        border-top: 1px solid var(--color-border);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .detail-label {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .detail-value {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        font-family: var(--font-family-mono);
+    }
+
+    .load-more-container {
+        padding: var(--spacing-md);
+        text-align: center;
+        border-top: 1px solid var(--color-border);
+    }
+
+    .load-more-btn {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-background);
+        color: var(--color-text-primary);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        font-size: var(--font-size-sm);
+    }
+
+    .load-more-btn:hover {
+        background: var(--color-primary);
+        color: white;
+        border-color: var(--color-primary);
+    }
+
+    .scroll-controls {
+        position: absolute;
+        bottom: var(--spacing-md);
+        right: var(--spacing-md);
+        display: flex;
+        gap: var(--spacing-sm);
+        z-index: 10;
+    }
+
+    .scroll-control-btn,
+    .scroll-to-top-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-full);
+        background: rgba(var(--color-surface-rgb), 0.95);
+        color: var(--color-text-primary);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow-sm);
+        white-space: nowrap;
+    }
+
+    .scroll-control-btn.active {
+        background: rgba(var(--color-primary-rgb), 0.2);
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+    }
+
+    .scroll-control-btn:hover,
+    .scroll-to-top-btn:hover {
+        background: var(--color-primary);
+        color: white;
+        border-color: var(--color-primary);
+        transform: translateY(-1px);
+    }
+
+    .scroll-to-top-btn {
+        background: rgba(var(--color-warning-rgb), 0.9);
+        border-color: var(--color-warning);
+        color: var(--color-warning-dark);
+        animation: pulse 2s infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    @@keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+
+    @@media (max-width: 768px) {
+        .events-header {
+            padding: var(--spacing-md);
+        }
+
+        .header-content {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--spacing-sm);
+        }
+
+        .search-controls {
+            width: 100%;
+            gap: var(--spacing-sm);
+        }
+
+        .search-box {
+            min-width: auto;
+        }
+
+        .event-content {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--spacing-sm);
+        }
+
+        .event-meta {
+            align-self: flex-end;
+        }
+
+        .detail-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--spacing-xs);
+        }
+    }
+</style>
+
+@code {
+    private List<MarketEvent> allEvents = new();
+    private List<MarketEvent> filteredEvents = new();
+    private MarketEvent? selectedEvent;
+    private string searchTerm = string.Empty;
+    private string selectedFilter = "all";
+    private bool isLoading = true;
+    private bool isConnected = false;
+    private string containerHeight = "400px";
+    private ElementReference eventsContainer;
+    private HubConnection? connection;
+    private bool isDisposed = false;
+
+    // Virtualization properties
+    private const int ItemHeight = 80; // Approximate height of each event item
+    private const int VisibleItemsBuffer = 5; // Extra items to render for smoother scrolling
+    private int scrollTop = 0;
+    private int visibleStartIndex = 0;
+    private int visibleEndIndex = 0;
+    private int topSpacerHeight = 0;
+    private int bottomSpacerHeight = 0;
+
+    // Auto-scroll properties
+    private bool autoScrollEnabled = true;
+    private bool hasNewEvents = false;
+    private int newEventsCount = 0;
+    private DateTime lastScrollTime = DateTime.Now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InitializeSignalR();
+        await Task.Delay(1000); // Simulate loading
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CalculateVirtualization();
+        }
+    }
+
+    private async Task InitializeSignalR()
+    {
+        try
+        {
+            connection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/markethub"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            connection.On<MarketEvent>("ReceiveMarketEvent", async marketEvent =>
+            {
+                if (isDisposed) return;
+
+                await InvokeAsync(async () =>
+                {
+                    await AddNewEvent(marketEvent);
+                    ApplyFilters();
+                    StateHasChanged();
+                });
+            });
+
+            connection.Closed += async (exception) =>
+            {
+                if (!isDisposed)
+                {
+                    await InvokeAsync(() =>
+                    {
+                        isConnected = false;
+                        StateHasChanged();
+                    });
+                }
+            };
+
+            connection.Reconnected += async (connectionId) =>
+            {
+                if (!isDisposed)
+                {
+                    await InvokeAsync(() =>
+                    {
+                        isConnected = true;
+                        StateHasChanged();
+                    });
+                }
+            };
+
+            await connection.StartAsync();
+            isConnected = true;
+
+            // Simulate some initial events
+            await SimulateInitialEvents();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize SignalR connection");
+        }
+    }
+
+    private async Task CalculateVirtualization()
+    {
+        if (eventsContainer.Context == null) return;
+
+        try
+        {
+            var containerHeightPx = 400; // Default container height
+            var visibleItemCount = (int)Math.Ceiling((double)containerHeightPx / ItemHeight) + VisibleItemsBuffer;
+
+            visibleStartIndex = Math.Max(0, scrollTop / ItemHeight - VisibleItemsBuffer);
+            visibleEndIndex = Math.Min(filteredEvents.Count - 1, visibleStartIndex + visibleItemCount);
+
+            topSpacerHeight = visibleStartIndex * ItemHeight;
+            bottomSpacerHeight = Math.Max(0, (filteredEvents.Count - visibleEndIndex - 1) * ItemHeight);
+
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            // Handle any calculation errors silently
+        }
+    }
+
+    private async Task OnScroll()
+    {
+        if (eventsContainer.Context == null) return;
+
+        try
+        {
+            scrollTop = await JSRuntime.InvokeAsync<int>("eval", $"document.getElementById('{eventsContainer.Context}').scrollTop");
+            lastScrollTime = DateTime.Now;
+            await CalculateVirtualization();
+        }
+        catch
+        {
+            // Handle any JS interop errors silently
+        }
+    }
+
+    private List<MarketEvent> GetVirtualizedEvents()
+    {
+        if (filteredEvents.Count == 0) return new List<MarketEvent>();
+        
+        return filteredEvents
+            .Skip(visibleStartIndex)
+            .Take(Math.Max(0, visibleEndIndex - visibleStartIndex + 1))
+            .ToList();
+    }
+
+    private async Task ToggleAutoScroll()
+    {
+        autoScrollEnabled = !autoScrollEnabled;
+        if (autoScrollEnabled && hasNewEvents)
+        {
+            await ScrollToTop();
+        }
+    }
+
+    private async Task ScrollToTop()
+    {
+        if (eventsContainer.Context != null)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("eval", $"document.querySelector('.events-list-virtualized').scrollTop = 0");
+                scrollTop = 0;
+                hasNewEvents = false;
+                newEventsCount = 0;
+                await CalculateVirtualization();
+            }
+            catch
+            {
+                // Handle any JS interop errors silently
+            }
+        }
+    }
+
+    private async Task SimulateInitialEvents()
+    {
+        var symbols = new[] { "AAPL", "GOOGL", "MSFT", "TSLA", "AMZN", "META", "NFLX", "NVDA" };
+        var random = new Random();
+
+        for (int i = 0; i < 15; i++)
+        {
+            var symbol = symbols[random.Next(symbols.Length)];
+            var price = (decimal)(random.NextDouble() * 500 + 50);
+            var volume = random.Next(1000, 50000);
+            var timestamp = DateTime.Now.AddMinutes(-random.Next(0, 120));
+
+            var marketEvent = new MarketEvent
+            {
+                Symbol = symbol,
+                Price = price,
+                Volume = volume,
+                Timestamp = timestamp,
+                Description = $"Market update for {symbol}",
+                Trend = random.NextDouble() > 0.5 ? "up" : "down"
+            };
+
+            allEvents.Add(marketEvent);
+        }
+
+        allEvents = allEvents.OrderByDescending(e => e.Timestamp).ToList();
+        ApplyFilters();
+        await CalculateVirtualization();
+    }
+
+    private async Task AddNewEvent(MarketEvent marketEvent)
+    {
+        allEvents.Insert(0, marketEvent);
+        
+        // Keep only the latest 1000 events to prevent memory issues
+        if (allEvents.Count > 1000)
+        {
+            allEvents.RemoveRange(1000, allEvents.Count - 1000);
+        }
+
+        // Handle auto-scroll for new events
+        if (autoScrollEnabled)
+        {
+            await ScrollToTop();
+        }
+        else
+        {
+            hasNewEvents = true;
+            newEventsCount++;
+        }
+
+        await CalculateVirtualization();
+    }
+
+    private void HandleSearchInput(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void HandleFilterChange()
+    {
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = allEvents.AsEnumerable();
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filtered = filtered.Where(e => 
+                (e.Symbol?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (e.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        // Apply category filter
+        filtered = selectedFilter switch
+        {
+            "price" => filtered.Where(e => e.Price.HasValue),
+            "volume" => filtered.Where(e => e.Volume.HasValue),
+            "recent" => filtered.Where(e => e.Timestamp.HasValue && 
+                (DateTime.Now - e.Timestamp.Value).TotalMinutes <= 5),
+            _ => filtered
+        };
+
+        filteredEvents = filtered.ToList();
+        _ = CalculateVirtualization(); // Fire and forget
+    }
+
+    private void SelectEvent(MarketEvent eventItem)
+    {
+        selectedEvent = selectedEvent == eventItem ? null : eventItem;
+    }
+
+    private void HoverEvent(MarketEvent eventItem)
+    {
+        // Could add hover effects here
+    }
+
+    private void UnhoverEvent()
+    {
+        // Could remove hover effects here
+    }
+
+    private void ClearEvents()
+    {
+        allEvents.Clear();
+        filteredEvents.Clear();
+        selectedEvent = null;
+        StateHasChanged();
+    }
+
+    private string GetEventClass(MarketEvent eventItem)
+    {
+        var classes = new List<string>();
+        
+        if (eventItem == selectedEvent)
+            classes.Add("selected");
+            
+        if (!string.IsNullOrEmpty(eventItem.Trend))
+            classes.Add($"trending-{eventItem.Trend}");
+            
+        return string.Join(" ", classes);
+    }
+
+    private string GetTrendIcon(string trend)
+    {
+        return trend?.ToLower() switch
+        {
+            "up" => "↗",
+            "down" => "↘",
+            _ => "→"
+        };
+    }
+
+    private string FormatTime(DateTime? timestamp)
+    {
+        if (!timestamp.HasValue) return "N/A";
+        
+        var diff = DateTime.Now - timestamp.Value;
+        
+        if (diff.TotalSeconds < 60)
+            return $"{(int)diff.TotalSeconds}s ago";
+        if (diff.TotalMinutes < 60)
+            return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24)
+            return $"{(int)diff.TotalHours}h ago";
+            
+        return timestamp.Value.ToString("MMM dd, HH:mm");
+    }
+
+    private string FormatVolume(decimal volume)
+    {
+        if (volume >= 1_000_000)
+            return $"{volume / 1_000_000:F1}M";
+        if (volume >= 1_000)
+            return $"{volume / 1_000:F1}K";
+        return volume.ToString("N0");
+    }
+
+    private string GetEmptyStateMessage()
+    {
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+            return $"No events match '{searchTerm}'";
+        if (selectedFilter != "all")
+            return $"No events in '{selectedFilter}' category";
+        return "Market events will appear here when received";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (isDisposed) return;
+        isDisposed = true;
+
+        if (connection != null)
+        {
+            await connection.DisposeAsync();
+        }
+    }
+}

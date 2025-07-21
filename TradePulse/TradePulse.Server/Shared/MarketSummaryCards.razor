@@ -1,0 +1,994 @@
+@using Microsoft.AspNetCore.SignalR.Client
+@using TradePulse.Server.Models
+@inject NavigationManager Navigation
+@inject ILogger<MarketSummaryCards> Logger
+@implements IAsyncDisposable
+
+<div class="market-summary-grid">
+    @foreach (var card in summaryCards)
+    {
+        <div class="summary-card modern-card glass @GetCardClass(card)" 
+             @onclick="() => OnCardClick(card)" 
+             @onmouseenter="() => OnCardHover(card)" 
+             @onmouseleave="() => OnCardLeave(card)"
+             role="button"
+             tabindex="0"
+             aria-label="@card.Title market summary card. Current value: @card.Value. @(card.ChangePercent.HasValue ? $"Change: {card.ChangePercent.Value:F2}%" : "")"
+             @onkeydown="@(async (e) => { if (e.Key == "Enter" || e.Key == " ") await OnCardKeyPress(card, e); })"
+             title="Click to view detailed information for @card.Title">
+            <div class="card-header">
+                <div class="card-icon">@card.Icon</div>
+                <div class="card-meta">
+                    <span class="card-title">@card.Title</span>
+                    <span class="card-subtitle">@card.Subtitle</span>
+                </div>
+            </div>
+            
+            <div class="card-content">
+                <div class="primary-value @GetValueClass(card.ChangePercent)">
+                    @if (card.IsLoading)
+                    {
+                        <div class="value-skeleton"></div>
+                    }
+                    else
+                    {
+                        <span class="value-text">@card.Value</span>
+                        @if (card.ChangePercent.HasValue)
+                        {
+                            <span class="change-indicator @GetTrendClass(card.ChangePercent.Value)"
+                                  aria-label="@(card.ChangePercent.Value >= 0 ? "Positive" : "Negative") change of @card.ChangePercent.Value.ToString("F2") percent">
+                                <span aria-hidden="true">@GetTrendIcon(card.ChangePercent.Value)</span> @card.ChangePercent.Value.ToString("F2")%
+                            </span>
+                        }
+                    }
+                </div>
+                
+                @if (!string.IsNullOrEmpty(card.SecondaryValue))
+                {
+                    <div class="secondary-value">
+                        <span class="secondary-label">@card.SecondaryLabel</span>
+                        <span class="secondary-text">@card.SecondaryValue</span>
+                    </div>
+                }
+            </div>
+            
+            @if (card.ShowSparkline && card.SparklineData?.Any() == true)
+            {
+                <div class="sparkline-container">
+                    <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
+                        <polyline 
+                            points="@GenerateSparklinePoints(card.SparklineData)" 
+                            fill="none" 
+                            stroke="@GetSparklineColor(card.ChangePercent)" 
+                            stroke-width="1.5"/>
+                    </svg>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .market-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .summary-card {
+        padding: var(--spacing-lg);
+        position: relative;
+        overflow: hidden;
+        transition: all var(--transition-base);
+        cursor: pointer;
+        background: var(--glass-background);
+        backdrop-filter: var(--glass-backdrop-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop-filter);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--shadow-md);
+    }
+
+    .summary-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: var(--shadow-xl), 0 0 30px rgba(var(--color-primary-rgb), 0.2);
+        border-color: rgba(var(--color-primary-rgb), 0.4);
+    }
+
+    .summary-card.trending-up:hover {
+        box-shadow: var(--shadow-xl), 0 0 30px rgba(var(--color-success-rgb), 0.3);
+        border-color: rgba(var(--color-success-rgb), 0.4);
+    }
+
+    .summary-card.trending-down:hover {
+        box-shadow: var(--shadow-xl), 0 0 30px rgba(var(--color-danger-rgb), 0.3);
+        border-color: rgba(var(--color-danger-rgb), 0.4);
+    }
+
+    .summary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity var(--transition-base);
+    }
+
+    .summary-card:hover::before {
+        opacity: 1;
+    }
+
+    .summary-card.trending-up::before {
+        background: var(--gradient-success);
+    }
+
+    .summary-card.trending-down::before {
+        background: var(--gradient-danger);
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .card-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: var(--radius-xl);
+        background: rgba(var(--color-primary-rgb), 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        transition: all var(--transition-base);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-icon::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent, rgba(var(--color-primary-rgb), 0.1), transparent);
+        transform: translateX(-100%);
+        transition: transform var(--transition-base);
+    }
+
+    .summary-card:hover .card-icon {
+        background: rgba(var(--color-primary-rgb), 0.2);
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.3);
+    }
+
+    .summary-card:hover .card-icon::before {
+        transform: translateX(100%);
+    }
+
+    .summary-card.trending-up .card-icon {
+        background: rgba(var(--color-success-rgb), 0.1);
+    }
+
+    .summary-card.trending-up:hover .card-icon {
+        background: rgba(var(--color-success-rgb), 0.2);
+        box-shadow: 0 0 20px rgba(var(--color-success-rgb), 0.4);
+    }
+
+    .summary-card.trending-down .card-icon {
+        background: rgba(var(--color-danger-rgb), 0.1);
+    }
+
+    .summary-card.trending-down:hover .card-icon {
+        background: rgba(var(--color-danger-rgb), 0.2);
+        box-shadow: 0 0 20px rgba(var(--color-danger-rgb), 0.4);
+    }
+
+    .card-meta {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .card-title {
+        font-size: var(--font-size-md);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+    }
+
+    .card-subtitle {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+
+    .card-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .primary-value {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        flex-wrap: wrap;
+    }
+
+    .value-text {
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-text-primary);
+        transition: all var(--transition-base);
+        position: relative;
+        background: linear-gradient(45deg, var(--color-text-primary), var(--color-primary));
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 200% 200%;
+        animation: gradient-shift 3s ease-in-out infinite;
+    }
+
+    .summary-card:hover .value-text {
+        text-shadow: 0 0 25px rgba(var(--color-primary-rgb), 0.5);
+        transform: scale(1.05);
+        filter: brightness(1.2);
+    }
+
+    .summary-card.trending-up:hover .value-text {
+        text-shadow: 0 0 25px rgba(var(--color-success-rgb), 0.6);
+    }
+
+    .summary-card.trending-down:hover .value-text {
+        text-shadow: 0 0 25px rgba(var(--color-danger-rgb), 0.6);
+    }
+
+    .value-skeleton {
+        width: 120px;
+        height: 36px;
+        background: linear-gradient(90deg, 
+            rgba(var(--color-border-rgb), 0.3) 25%, 
+            rgba(var(--color-border-rgb), 0.5) 50%, 
+            rgba(var(--color-border-rgb), 0.3) 75%);
+        background-size: 200% 100%;
+        border-radius: var(--radius-sm);
+        animation: shimmer 2s infinite;
+    }
+
+    .change-indicator {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-full);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        transition: all var(--transition-base);
+        position: relative;
+        overflow: hidden;
+        animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    .change-indicator::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left var(--transition-base);
+    }
+
+    .summary-card:hover .change-indicator::before {
+        left: 100%;
+    }
+
+    .change-indicator.positive {
+        background: rgba(var(--color-success-rgb), 0.15);
+        color: var(--color-success);
+        border: 1px solid rgba(var(--color-success-rgb), 0.3);
+        box-shadow: 0 0 10px rgba(var(--color-success-rgb), 0.2);
+    }
+
+    .change-indicator.positive:hover {
+        background: rgba(var(--color-success-rgb), 0.25);
+        transform: scale(1.05);
+        box-shadow: 0 0 15px rgba(var(--color-success-rgb), 0.4);
+    }
+
+    .change-indicator.negative {
+        background: rgba(var(--color-danger-rgb), 0.15);
+        color: var(--color-danger);
+        border: 1px solid rgba(var(--color-danger-rgb), 0.3);
+        box-shadow: 0 0 10px rgba(var(--color-danger-rgb), 0.2);
+    }
+
+    .change-indicator.negative:hover {
+        background: rgba(var(--color-danger-rgb), 0.25);
+        transform: scale(1.05);
+        box-shadow: 0 0 15px rgba(var(--color-danger-rgb), 0.4);
+    }
+
+    .change-indicator.neutral {
+        background: rgba(var(--color-text-secondary-rgb), 0.15);
+        color: var(--color-text-secondary);
+        border: 1px solid rgba(var(--color-text-secondary-rgb), 0.3);
+        box-shadow: 0 0 10px rgba(var(--color-text-secondary-rgb), 0.1);
+    }
+
+    .secondary-value {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm);
+        background: rgba(var(--color-surface-rgb), 0.5);
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(var(--color-border-rgb), 0.5);
+    }
+
+    .secondary-label {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .secondary-text {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        font-weight: var(--font-weight-semibold);
+    }
+
+    .sparkline-container {
+        margin-top: var(--spacing-md);
+        height: 20px;
+        opacity: 0.7;
+        transition: opacity var(--transition-base);
+    }
+
+    .summary-card:hover .sparkline-container {
+        opacity: 1;
+    }
+
+    .sparkline {
+        width: 100%;
+        height: 100%;
+    }
+
+    @@keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+
+    @@keyframes glow {
+        0%, 100% { box-shadow: 0 0 5px rgba(var(--color-primary-rgb), 0.3); }
+        50% { box-shadow: 0 0 30px rgba(var(--color-primary-rgb), 0.8); }
+    }
+
+    @@keyframes gradient-shift {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    @@keyframes pulse-glow {
+        0%, 100% { 
+            box-shadow: 0 0 5px rgba(var(--color-primary-rgb), 0.2); 
+            transform: scale(1);
+        }
+        50% { 
+            box-shadow: 0 0 15px rgba(var(--color-primary-rgb), 0.4); 
+            transform: scale(1.02);
+        }
+    }
+
+    @@keyframes card-entrance {
+        0% {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .summary-card {
+        animation: card-entrance 0.6s ease-out forwards;
+    }
+
+    .summary-card:nth-child(1) { animation-delay: 0.1s; }
+    .summary-card:nth-child(2) { animation-delay: 0.2s; }
+    .summary-card:nth-child(3) { animation-delay: 0.3s; }
+    .summary-card:nth-child(4) { animation-delay: 0.4s; }
+
+    .summary-card.trending-up:hover {
+        animation: glow 2s infinite;
+        --color-primary-rgb: var(--color-success-rgb);
+    }
+
+    .summary-card.trending-down:hover {
+        animation: glow 2s infinite;
+        --color-primary-rgb: var(--color-danger-rgb);
+    }
+
+    /* Enhanced Responsive Design for Summary Cards */
+    
+    /* Large screens - 4 columns */
+    @@media (min-width: 1200px) {
+        .market-summary-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-xl);
+        }
+        
+        .summary-card {
+            padding: var(--spacing-xl);
+        }
+        
+        .card-icon {
+            width: 64px;
+            height: 64px;
+            font-size: 2rem;
+        }
+        
+        .value-text {
+            font-size: var(--font-size-3xl);
+        }
+    }
+
+    /* Medium-large screens - 3 columns */
+    @@media (max-width: 1199px) and (min-width: 992px) {
+        .market-summary-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-lg);
+        }
+        
+        .summary-card {
+            padding: var(--spacing-lg);
+        }
+    }
+
+    /* Tablet screens - 2 columns */
+    @@media (max-width: 991px) and (min-width: 769px) {
+        .market-summary-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-lg);
+        }
+        
+        .summary-card {
+            padding: var(--spacing-lg);
+        }
+        
+        .card-header {
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            font-size: 1.5rem;
+        }
+        
+        .value-text {
+            font-size: var(--font-size-xl);
+        }
+    }
+
+    /* Mobile devices - 1 column */
+    @@media (max-width: 768px) {
+        .market-summary-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .summary-card {
+            padding: var(--spacing-md);
+            margin: 0 var(--spacing-xs);
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-4px) scale(1.01); /* Reduced transform for mobile */
+        }
+
+        .card-header {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .card-icon {
+            width: 44px;
+            height: 44px;
+            font-size: 1.25rem;
+        }
+
+        .value-text {
+            font-size: var(--font-size-xl);
+        }
+
+        .primary-value {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--spacing-xs);
+        }
+        
+        .change-indicator {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: var(--font-size-xs);
+            min-height: 32px; /* Touch-friendly */
+        }
+        
+        .secondary-value {
+            padding: var(--spacing-xs) var(--spacing-sm);
+        }
+        
+        .secondary-label,
+        .secondary-text {
+            font-size: var(--font-size-xs);
+        }
+        
+        .sparkline-container {
+            height: 16px;
+            margin-top: var(--spacing-sm);
+        }
+    }
+
+    /* Small mobile devices */
+    @@media (max-width: 480px) {
+        .market-summary-grid {
+            gap: var(--spacing-sm);
+        }
+        
+        .summary-card {
+            padding: var(--spacing-sm);
+            margin: 0;
+        }
+        
+        .card-header {
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.1rem;
+        }
+        
+        .card-title {
+            font-size: var(--font-size-sm);
+        }
+        
+        .card-subtitle {
+            font-size: var(--font-size-xs);
+        }
+        
+        .value-text {
+            font-size: var(--font-size-lg);
+        }
+        
+        .change-indicator {
+            font-size: var(--font-size-xs);
+            padding: 2px var(--spacing-xs);
+        }
+        
+        .secondary-value {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+        
+        .sparkline-container {
+            height: 12px;
+        }
+    }
+
+    /* Landscape mobile optimization */
+    @@media (max-height: 500px) and (orientation: landscape) {
+        .market-summary-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-sm);
+        }
+        
+        .summary-card {
+            padding: var(--spacing-xs) var(--spacing-sm);
+        }
+        
+        .card-header {
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .sparkline-container {
+            display: none; /* Hide sparklines in landscape to save space */
+        }
+        
+        .secondary-value {
+            display: none; /* Hide secondary values in landscape */
+        }
+    }
+</style>
+
+@code {
+    private List<SummaryCardData> summaryCards = new();
+    private HubConnection? connection;
+    private bool isDisposed = false;
+    private Dictionary<string, List<decimal>> historicalData = new();
+    private readonly SemaphoreSlim updateSemaphore = new(1, 1);
+    private DateTime lastRender = DateTime.Now;
+
+    private class SummaryCardData
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Subtitle { get; set; } = string.Empty;
+        public string Icon { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+        public decimal? ChangePercent { get; set; }
+        public string SecondaryLabel { get; set; } = string.Empty;
+        public string SecondaryValue { get; set; } = string.Empty;
+        public bool IsLoading { get; set; } = true;
+        public bool ShowSparkline { get; set; } = true;
+        public List<decimal>? SparklineData { get; set; } = new();
+        public string Symbol { get; set; } = string.Empty;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        InitializeSummaryCards();
+        await InitializeSignalR();
+    }
+
+    private void InitializeSummaryCards()
+    {
+        summaryCards = new List<SummaryCardData>
+        {
+            new()
+            {
+                Title = "Total Portfolio",
+                Subtitle = "Current Value",
+                Icon = "💰",
+                Value = "$0.00",
+                ChangePercent = 0,
+                SecondaryLabel = "24h Volume",
+                SecondaryValue = "$0.00",
+                Symbol = "PORTFOLIO"
+            },
+            new()
+            {
+                Title = "Active Positions",
+                Subtitle = "Open Trades",
+                Icon = "📈",
+                Value = "0",
+                ChangePercent = 0,
+                SecondaryLabel = "P&L Today",
+                SecondaryValue = "$0.00",
+                Symbol = "POSITIONS"
+            },
+            new()
+            {
+                Title = "Market Cap",
+                Subtitle = "Total Market",
+                Icon = "🌐",
+                Value = "$0.00",
+                ChangePercent = 0,
+                SecondaryLabel = "24h Change",
+                SecondaryValue = "$0.00",
+                Symbol = "MARKET"
+            },
+            new()
+            {
+                Title = "Volatility Index",
+                Subtitle = "Market Fear & Greed",
+                Icon = "⚡",
+                Value = "0",
+                ChangePercent = 0,
+                SecondaryLabel = "Risk Level",
+                SecondaryValue = "Low",
+                Symbol = "VIX"
+            }
+        };
+    }
+
+    private async Task InitializeSignalR()
+    {
+        try
+        {
+            connection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/markethub"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            connection.On<MarketEvent>("ReceiveMarketEvent", async marketEvent =>
+            {
+                if (isDisposed) return;
+
+                // Throttle updates to prevent excessive re-rendering
+                if (!await updateSemaphore.WaitAsync(50)) return;
+                
+                try
+                {
+                    await InvokeAsync(() =>
+                    {
+                        UpdateSummaryCards(marketEvent);
+                        
+                        // Only re-render if enough time has passed
+                        var now = DateTime.Now;
+                        if ((now - lastRender).TotalMilliseconds > 200) // Max 5 updates per second
+                        {
+                            StateHasChanged();
+                            lastRender = now;
+                        }
+                    });
+                }
+                finally
+                {
+                    updateSemaphore.Release();
+                }
+            });
+
+            await connection.StartAsync();
+
+            // Simulate some initial data
+            await Task.Delay(1000);
+            SimulateInitialData();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to initialize SignalR connection");
+        }
+    }
+
+    private void SimulateInitialData()
+    {
+        var random = new Random();
+        
+        foreach (var card in summaryCards)
+        {
+            card.IsLoading = false;
+            
+            switch (card.Symbol)
+            {
+                case "PORTFOLIO":
+                    card.Value = $"${random.Next(50000, 250000):N0}";
+                    card.ChangePercent = (decimal)(random.NextDouble() * 10 - 5);
+                    card.SecondaryValue = $"${random.Next(1000, 10000):N0}";
+                    break;
+                    
+                case "POSITIONS":
+                    card.Value = random.Next(5, 25).ToString();
+                    card.ChangePercent = (decimal)(random.NextDouble() * 6 - 3);
+                    card.SecondaryValue = $"${random.Next(-1000, 5000):N0}";
+                    break;
+                    
+                case "MARKET":
+                    card.Value = $"${random.Next(1, 5)}T";
+                    card.ChangePercent = (decimal)(random.NextDouble() * 4 - 2);
+                    card.SecondaryValue = $"${random.Next(10000, 100000):N0}M";
+                    break;
+                    
+                case "VIX":
+                    var vixValue = random.Next(10, 40);
+                    card.Value = vixValue.ToString();
+                    card.ChangePercent = (decimal)(random.NextDouble() * 8 - 4);
+                    card.SecondaryValue = vixValue < 20 ? "Low" : vixValue < 30 ? "Medium" : "High";
+                    break;
+            }
+
+            // Generate sparkline data
+            card.SparklineData = GenerateSparklineData(20, (float)(card.ChangePercent ?? 0));
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateSummaryCards(MarketEvent marketEvent)
+    {
+        var random = new Random();
+        
+        // Update portfolio value based on market events
+        var portfolioCard = summaryCards.FirstOrDefault(c => c.Symbol == "PORTFOLIO");
+        if (portfolioCard != null && marketEvent.Price.HasValue)
+        {
+            var baseValue = 150000 + (int)(marketEvent.Price.Value * 1000);
+            var previousValue = ExtractNumericValue(portfolioCard.Value);
+            portfolioCard.Value = $"${baseValue:N0}";
+            
+            // Calculate realistic change percentage
+            var changePercent = previousValue > 0 ? ((baseValue - previousValue) / previousValue) * 100 : 0;
+            portfolioCard.ChangePercent = (decimal)Math.Round(changePercent, 2);
+            
+            portfolioCard.SecondaryValue = $"${random.Next(5000, 25000):N0}";
+            
+            // Update sparkline with new data
+            UpdateSparklineData("PORTFOLIO", baseValue);
+            portfolioCard.SparklineData = historicalData["PORTFOLIO"].ToList();
+        }
+
+        // Update other cards with realistic correlations
+        UpdatePositionsCard(marketEvent, random);
+        UpdateMarketCapCard(marketEvent, random);
+        UpdateVolatilityCard(marketEvent, random);
+    }
+
+    private void UpdatePositionsCard(MarketEvent marketEvent, Random random)
+    {
+        var positionsCard = summaryCards.FirstOrDefault(c => c.Symbol == "POSITIONS");
+        if (positionsCard != null)
+        {
+            var currentPositions = ExtractNumericValue(positionsCard.Value);
+            var newPositions = Math.Max(3, currentPositions + random.Next(-1, 2));
+            positionsCard.Value = newPositions.ToString();
+            
+            var dailyPnL = random.Next(-2000, 8000);
+            positionsCard.ChangePercent = (decimal)(random.NextDouble() * 8 - 4);
+            positionsCard.SecondaryValue = $"${dailyPnL:N0}";
+        }
+    }
+
+    private void UpdateMarketCapCard(MarketEvent marketEvent, Random random)
+    {
+        var marketCard = summaryCards.FirstOrDefault(c => c.Symbol == "MARKET");
+        if (marketCard != null)
+        {
+            var capValue = random.Next(2, 6);
+            marketCard.Value = $"${capValue}T";
+            marketCard.ChangePercent = (decimal)(random.NextDouble() * 6 - 3);
+            marketCard.SecondaryValue = $"${random.Next(50000, 150000):N0}M";
+        }
+    }
+
+    private void UpdateVolatilityCard(MarketEvent marketEvent, Random random)
+    {
+        var vixCard = summaryCards.FirstOrDefault(c => c.Symbol == "VIX");
+        if (vixCard != null)
+        {
+            var vixValue = random.Next(8, 45);
+            vixCard.Value = vixValue.ToString();
+            vixCard.ChangePercent = (decimal)(random.NextDouble() * 10 - 5);
+            vixCard.SecondaryValue = vixValue < 20 ? "Low" : vixValue < 30 ? "Medium" : "High";
+        }
+    }
+
+    private decimal ExtractNumericValue(string value)
+    {
+        var numericString = new string(value.Where(c => char.IsDigit(c) || c == '.').ToArray());
+        return decimal.TryParse(numericString, out var result) ? result : 0;
+    }
+
+    private void UpdateSparklineData(string symbol, decimal newValue)
+    {
+        if (!historicalData.ContainsKey(symbol))
+            historicalData[symbol] = new List<decimal>();
+            
+        historicalData[symbol].Add(newValue);
+        if (historicalData[symbol].Count > 20)
+            historicalData[symbol].RemoveAt(0);
+    }
+
+    private List<decimal> GenerateSparklineData(int points, float trend)
+    {
+        var data = new List<decimal>();
+        var random = new Random();
+        var baseValue = 100m;
+
+        for (int i = 0; i < points; i++)
+        {
+            baseValue += (decimal)(random.NextDouble() * 4 - 2 + trend * 0.1);
+            data.Add(Math.Max(0, baseValue));
+        }
+
+        return data;
+    }
+
+    private string GenerateSparklinePoints(List<decimal> data)
+    {
+        if (!data.Any()) return "";
+
+        var min = data.Min();
+        var max = data.Max();
+        var range = max - min;
+
+        if (range == 0) return "0,10 100,10";
+
+        var points = new List<string>();
+        for (int i = 0; i < data.Count; i++)
+        {
+            var x = (i * 100m) / (data.Count - 1);
+            var y = 20 - ((data[i] - min) / range * 20);
+            points.Add($"{x:F1},{y:F1}");
+        }
+
+        return string.Join(" ", points);
+    }
+
+    private void OnCardClick(SummaryCardData card)
+    {
+        // Add card click interaction - could navigate to detailed view
+        Logger.LogInformation($"Card clicked: {card.Title}");
+    }
+
+    private void OnCardHover(SummaryCardData card)
+    {
+        // Add hover interaction - could show additional data
+        Logger.LogDebug($"Card hovered: {card.Title}");
+    }
+
+    private void OnCardLeave(SummaryCardData card)
+    {
+        // Add leave interaction - cleanup hover effects
+        Logger.LogDebug($"Card hover ended: {card.Title}");
+    }
+
+    private async Task OnCardKeyPress(SummaryCardData card, KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            OnCardClick(card);
+        }
+    }
+
+    private string GetCardClass(SummaryCardData card)
+    {
+        if (card.ChangePercent > 0) return "trending-up";
+        if (card.ChangePercent < 0) return "trending-down";
+        return "";
+    }
+
+    private string GetValueClass(decimal? changePercent)
+    {
+        return ""; // Base styling in CSS
+    }
+
+    private string GetTrendClass(decimal changePercent)
+    {
+        if (changePercent > 0) return "positive";
+        if (changePercent < 0) return "negative";
+        return "neutral";
+    }
+
+    private string GetTrendIcon(decimal changePercent)
+    {
+        if (changePercent > 0) return "↗";
+        if (changePercent < 0) return "↘";
+        return "→";
+    }
+
+    private string GetSparklineColor(decimal? changePercent)
+    {
+        if (changePercent > 0) return "var(--color-success)";
+        if (changePercent < 0) return "var(--color-danger)";
+        return "var(--color-primary)";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (isDisposed) return;
+        isDisposed = true;
+
+        // Proper cleanup to prevent memory leaks
+        updateSemaphore?.Dispose();
+        
+        if (connection != null)
+        {
+            try
+            {
+                await connection.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Error stopping SignalR connection during disposal");
+            }
+            finally
+            {
+                await connection.DisposeAsync();
+            }
+        }
+        
+        // Clear collections to help GC
+        summaryCards.Clear();
+        historicalData.Clear();
+        connection = null;
+    }
+}

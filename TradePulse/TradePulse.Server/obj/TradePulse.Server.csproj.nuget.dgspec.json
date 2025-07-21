@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj": {}
+    "C:\\Users\\Heatn\\OneDrive\\Desktop\\Projects Folder\\TradePulse App\\TradePulse-App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj": {
+    "C:\\Users\\Heatn\\OneDrive\\Desktop\\Projects Folder\\TradePulse App\\TradePulse-App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj",
+        "projectUniqueName": "C:\\Users\\Heatn\\OneDrive\\Desktop\\Projects Folder\\TradePulse App\\TradePulse-App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj",
         "projectName": "TradePulse.Server",
-        "projectPath": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj",
+        "projectPath": "C:\\Users\\Heatn\\OneDrive\\Desktop\\Projects Folder\\TradePulse App\\TradePulse-App\\TradePulse\\TradePulse.Server\\TradePulse.Server.csproj",
         "packagesPath": "C:\\Users\\Heatn\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Heatn\\OneDrive\\Desktop\\ProJects Folder\\TradePulse App\\TradePulse\\TradePulse.Server\\obj\\",
+        "outputPath": "C:\\Users\\Heatn\\OneDrive\\Desktop\\Projects Folder\\TradePulse App\\TradePulse-App\\TradePulse\\TradePulse.Server\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Heatn\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -38,12 +38,16 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.100"
+        "SdkAnalysisLevel": "9.0.200"
       },
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Blazor.Bootstrap": {
+              "target": "Package",
+              "version": "[3.3.1, )"
+            },
             "Blazorise": {
               "target": "Package",
               "version": "[1.7.6, )"
@@ -96,7 +100,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.203/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
