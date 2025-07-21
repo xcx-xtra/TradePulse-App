@@ -1,73 +1,182 @@
 # 📈 TradePulse
 
-**Real-Time Market Events Dashboard** built with **Blazor Server** and **SignalR**.
+**Professional Real-Time Market Dashboard** built with **Blazor Server**, **SignalR**, and modern UI components.
 
 ## 🚀 Overview
 
-TradePulse is a web-based application that displays live financial market updates in real-time. It uses **SignalR** for pushing live data and updates the UI instantly via a **Blazor Server** front-end.
+TradePulse is a comprehensive web-based market monitoring application that provides real-time financial market updates through an intuitive, professional dashboard interface. Built with Blazor Server and SignalR, it delivers instant market data visualization with modern UI/UX design principles.
 
-## 🛠️ Features
+## ✨ Features
 
-- ✅ Blazor Server project setup
-- ✅ Responsive layout with Bootstrap
-- ✅ Live market ticker using SignalR
-- ✅ Frontend updates automatically on market event triggers
-- ✅ SignalR events can be triggered via Postman or other HTTP tools
+### Core Functionality
 
-## 📷 UI Preview
+- ✅ **Real-time market data streaming** via SignalR
+- ✅ **Professional dashboard interface** with modern design system
+- ✅ **Live market chart visualization** with Chart.js integration
+- ✅ **Market summary cards** showing key metrics and trends
+- ✅ **Market events feed** with real-time updates and filtering
+- ✅ **Connection status monitoring** with automatic reconnection
+- ✅ **Responsive design** optimized for desktop, tablet, and mobile
 
+### UI/UX Enhancements
 
+- ✅ **Modern glass-morphism design** with CSS custom properties
+- ✅ **Dark/light theme support** with smooth transitions
+- ✅ **Professional navigation** with branded header
+- ✅ **Loading states and skeleton loaders** for better UX
+- ✅ **Error boundaries** with user-friendly error handling
+- ✅ **Performance monitoring** with real-time metrics
+- ✅ **Accessibility features** with ARIA labels and keyboard navigation
+
+### Technical Features
+
+- ✅ **Component-based architecture** with reusable UI components
+- ✅ **Memory leak prevention** with proper resource cleanup
+- ✅ **Performance optimization** with throttled updates
+- ✅ **Toast notifications** for system feedback
+- ✅ **Search and filtering** capabilities for market events
 
 ## 🧪 How to Test Live Updates
 
-1. Launch the app (`dotnet run`)
-2. Use **Postman** to send a POST request:
+1. **Launch the application:**
 
-```http
-POST http://localhost:5007/api/market/update
-Content-Type: application/json
+   ```bash
+   cd TradePulse/TradePulse.Server
+   dotnet run
+   ```
 
-{
-  "symbol": "AAPL",
-  "price": 192.35,
-  "timestamp": "2025-04-23T18:00:00Z"
-}
-The UI will instantly reflect this new market event.
+2. **Send market updates via API:**
 
-📂 Project Structure
-Pages/Index.razor: Displays live ticker
+   ```http
+   POST http://localhost:5007/api/market/update
+   Content-Type: application/json
 
-Controllers/MarketController.cs: API endpoint for event triggering
+   {
+     "symbol": "AAPL",
+     "price": 192.35,
+     "volume": 1000000,
+     "timestamp": "2025-01-21T18:00:00Z"
+   }
+   ```
 
-MarketHub.cs: SignalR Hub
+3. **Watch real-time updates:**
+   - Market summary cards update instantly
+   - Live chart displays new data points
+   - Events feed shows the latest market activity
+   - Connection status indicates live data flow
 
-wwwroot/js/signalr-client.js: Client-side connection to SignalR
+## 📂 Project Architecture
 
-🐞 Known Issues
-Occasional Render Errors on SignalR Updates
-You may see console errors like:
+```
+TradePulse/TradePulse.Server/
+├── Controllers/
+│   └── MarketController.cs          # REST API endpoints
+├── Models/
+│   └── MarketEvent.cs              # Data models
+├── Services/
+│   └── MarketDataService.cs        # Business logic
+├── Pages/
+│   ├── Dashboard.razor             # Main dashboard page
+│   ├── Index.razor                 # Entry point (redirects to dashboard)
+│   └── LiveMarketChart.razor       # Chart component
+├── Shared/
+│   ├── MainLayout.razor            # Application layout
+│   ├── Header.razor                # Navigation header
+│   ├── NavMenu.razor               # Navigation menu
+│   ├── MarketSummaryCards.razor    # Summary metrics
+│   ├── MarketEventsList.razor      # Events feed
+│   ├── ConnectionStatus.razor      # Connection indicator
+│   ├── LoadingSpinner.razor        # Loading states
+│   ├── SkeletonLoader.razor        # Skeleton loading
+│   └── ToastNotifications.razor    # Toast messages
+├── wwwroot/
+│   ├── css/design-system.css       # Design system variables
+│   └── js/                         # Client-side scripts
+├── MarketHub.cs                    # SignalR hub
+└── Program.cs                      # Application startup
+```
 
-javascript
-Copy code
-Error: Cannot read properties of null (reading 'removeChild')
-This occurs when SignalR attempts to update the UI after the Blazor component has been disposed or unmounted. While this does not break core functionality, it can be noisy in development mode. This will be addressed in a future sprint by improving lifecycle and connection cleanup logic.
+## 💻 Tech Stack
 
+### Backend
 
+- **.NET 9.0** - Target framework
+- **Blazor Server** - Server-side rendering with real-time UI updates
+- **SignalR** - Real-time bidirectional communication
+- **ASP.NET Core** - Web API and hosting framework
 
-💻 Tech Stack
-Blazor Server (.NET)
+### Frontend & UI
 
-SignalR
+- **Blazorise 1.7.6** - Blazor component library
+- **Bootstrap** - CSS framework for responsive design
+- **Chart.js** - Interactive chart visualization
+- **FontAwesome** - Icon library
+- **CSS Custom Properties** - Modern design system
 
-Bootstrap
+### Development Tools
 
-Postman (for testing)
+- **Visual Studio Code** with Kiro AI assistant
+- **Postman** - API testing
+- **Browser DevTools** - Debugging and performance monitoring
 
-📌 Future Plans
-Add user authentication
+## 🎨 Design System
 
-Save market events to database
+The application uses a comprehensive design system with:
 
-Deploy to Azure or Vercel
+- **CSS Custom Properties** for consistent theming
+- **Glass-morphism effects** with backdrop filters
+- **Responsive breakpoints** for all device sizes
+- **Accessibility-first approach** with ARIA labels
+- **Performance-optimized animations** and transitions
 
-Made with ❤️ by Webster Boeing
+## 🔧 Development Commands
+
+```bash
+# Run in development mode
+dotnet run
+
+# Build the project
+dotnet build
+
+# Restore packages
+dotnet restore
+
+# Clean build artifacts
+dotnet clean
+
+# Test market updates (Windows CMD)
+curl -X POST http://localhost:5007/api/market/update ^
+  -H "Content-Type: application/json" ^
+  -d "{\"symbol\":\"AAPL\",\"price\":192.35,\"volume\":1000000,\"timestamp\":\"2025-01-21T18:00:00Z\"}"
+```
+
+## 🚀 Recent Improvements
+
+### UI/UX Enhancements (v2.0)
+
+- **Professional dashboard redesign** with modern components
+- **Enhanced chart visualization** with smooth animations
+- **Improved responsive design** for all screen sizes
+- **Better error handling** and user feedback
+- **Performance optimizations** and memory leak fixes
+- **Accessibility improvements** with ARIA support
+
+## 📌 Future Roadmap
+
+- [ ] **User authentication** and personalized dashboards
+- [ ] **Data persistence** with database integration
+- [ ] **Advanced charting** with multiple timeframes
+- [ ] **Portfolio tracking** and watchlist features
+- [ ] **Real market data integration** (Alpha Vantage, Yahoo Finance)
+- [ ] **Mobile app** with React Native or MAUI
+- [ ] **Cloud deployment** to Azure or AWS
+
+## 🐞 Known Limitations
+
+- **In-memory data storage** - Data resets on application restart
+- **Simulated market data** - Uses test API endpoints for demonstration
+- **Single-user experience** - No multi-user support yet
+
+---
+
+**Made with ❤️ by Webster Boeing** | _Powered by Blazor Server & SignalR_
