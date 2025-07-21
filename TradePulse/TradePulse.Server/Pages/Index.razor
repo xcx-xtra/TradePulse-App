@@ -1,0 +1,89 @@
+@page "/"
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@using Blazorise.Charts
+
+<h3>📈 Live Market Ticker</h3>
+
+<ul>
+    @foreach (var item in Events)
+    {
+        <li @key="item.Timestamp">
+            <strong>@item.Symbol</strong> - $@item.Price <br />
+            <small>@(item.Timestamp?.ToLocalTime().ToShortTimeString() ?? "N/A")</small>
+        </li>
+    }
+</ul>
+
+<LineChart TItem="double" @ref="lineChart" />
+
+@code {
+    private LineChart<double>? lineChart;
+    private LineChartDataset<double> dataset = new()
+    {
+        Label = "Price",
+        BackgroundColor = "rgba(54, 162, 235, 0.5)",
+        BorderColor = "rgba(54, 162, 235, 1)",
+        Fill = true,
+        Data = new List<double>(),
+    };
+
+    private List<string> labels = new();
+    private List<MarketEvent> Events = new(); // Ensure Events is initialized
+    private bool _disposed; // Declare _disposed for cleanup
+
+    [JSInvokable]
+    public async Task ReceiveMarketEvent(MarketEvent marketEvent)
+    {
+        if (_disposed || Events == null) return;
+
+        try
+        {
+            await InvokeAsync(() =>
+            {
+                Events.Insert(0, marketEvent);
+
+                // Safe handling for nullable types
+                labels.Add(marketEvent.Timestamp?.ToString("HH:mm:ss") ?? "N/A");
+                dataset.Data.Add((double)marketEvent.Price);
+
+                // Keep only the last 10 data points
+                if (dataset.Data.Count > 10)
+                {
+                    dataset.Data.RemoveAt(0);
+                    labels.RemoveAt(0);
+                }
+
+                StateHasChanged();
+            });
+
+            await UpdateChart();
+        }
+        catch (ObjectDisposedException)
+        {
+            Console.WriteLine("Component was disposed before render.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Render failed: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateChart()
+    {
+        if (lineChart == null)
+        {
+            Console.WriteLine("lineChart is null. Skipping update.");
+            return;
+        }
+
+        await lineChart.Clear();
+        await lineChart.AddLabelsDatasetsAndUpdate(labels, dataset);
+    }
+
+    public void Dispose()
+    {
+        _disposed = true; // Mark the component as disposed
+        // Add any additional cleanup logic here
+    }
+}
