@@ -2,5 +2,8 @@ using Microsoft.AspNetCore.SignalR;
 
 public class MarketHub : Hub
 {
-    // Optionally include methods if you want the client to call the server
+    public async Task SendMarketEvent(MarketEvent marketEvent)
+    {
+        await Clients.All.SendAsync("ReceiveMarketEvent", marketEvent);
+    }
 }

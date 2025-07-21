@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run TradePulse Server",
+      "type": "shell",
+      "command": "dotnet run --project TradePulse.Server",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": ["$msCompile"]
+    }
+  ]
+}

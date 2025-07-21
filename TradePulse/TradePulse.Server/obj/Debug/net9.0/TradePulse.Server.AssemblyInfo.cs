@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TradePulse.Server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aceba5495cca478ee71c3397dfbb3dd649a98231")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c851db1ed25c7eee643fa3e7fa9a6bff2a0ca90f")]
 [assembly: System.Reflection.AssemblyProductAttribute("TradePulse.Server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TradePulse.Server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
